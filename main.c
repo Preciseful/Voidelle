@@ -36,21 +36,43 @@ void execute(int argc, char *argv[])
             printf("No further arguments can be taken.\n");
     }
 
+    else if (strcmp(option, "tree") == 0)
+    {
+        if (argc == 0)
+            ls("", LS_TREE);
+        while (argc)
+            ls(eat_arg(&argc, &argv), LS_TREE);
+    }
+
     else if (strcmp(option, "ls") == 0)
     {
-        for (int i = 0; i < argc; i++)
-            ls(eat_arg(&argc, &argv));
+        enum Ls_Options option = LS_NONE;
+        if (argc != 0 && strcmp(*argv, "-l") == 0)
+        {
+            option = LS_LONG;
+            eat_arg(&argc, &argv);
+        }
+
+        if (argc == 0)
+            ls("", option);
+
+        while (argc)
+        {
+            ls(eat_arg(&argc, &argv), option);
+            if (argc > 0)
+                printf("\n");
+        }
     }
 
     else if (strcmp(option, "touch") == 0)
     {
-        for (int i = 0; i < argc; i++)
+        while (argc)
             make(eat_arg(&argc, &argv), 0);
     }
 
     else if (strcmp(option, "mkdir") == 0)
     {
-        for (int i = 0; i < argc; i++)
+        while (argc)
             make(eat_arg(&argc, &argv), VOIDELLE_DIRECTORY);
     }
 }

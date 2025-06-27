@@ -11,6 +11,13 @@
 
 extern FILE *disk;
 
+enum Ls_Options
+{
+    LS_NONE,
+    LS_TREE,
+    LS_LONG
+};
+
 void init();
-void ls(char *path);
+void ls(char *path, enum Ls_Options flag);
 void make(char *path, uint64_t flags);

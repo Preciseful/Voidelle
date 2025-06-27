@@ -7,6 +7,21 @@
 #include "commands.h"
 #include "voidelle.h"
 
+static const char *months[] = {
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+};
+
 FILE *disk = 0;
 
 voidlet_t get_voidlet()
@@ -43,9 +58,12 @@ char *get_voidelle_name(voidelle_t voidelle)
         voidite_t name;
         fseek(disk, name_pos, SEEK_SET);
         fread(&name, 512, 1, disk);
-
-        memcpy(velle_name + i * VOIDELLE_SIZE, name.data, VOIDELLE_SIZE - 2 * sizeof(unsigned long));
         name_pos = name.next;
+
+        if (name_pos == 0)
+            strcpy(velle_name + i * VOIDELLE_SIZE, name.data);
+        else
+            memcpy(velle_name + i * VOIDELLE_SIZE, name.data, VOIDELLE_SIZE - 2 * sizeof(unsigned long));
     }
 
     return velle_name;
@@ -58,23 +76,25 @@ size_t get_entries(voidelle_t voidelle, voidelle_t **b_entries)
 
     voidelle_t *entries = malloc(sizeof(voidelle_t));
     size_t entries_capacity = 1;
+    size_t entries_count = 0;
 
     uint64_t entry_pos = voidelle.content;
     for (size_t i = 0; entry_pos; i++)
     {
         if (entries_capacity == i)
         {
-            entries = realloc(entries, entries_capacity * 2);
+            entries = realloc(entries, sizeof(voidelle_t) * entries_capacity * 2);
             entries_capacity *= 2;
         }
 
         voidelle_t entry = get_voidelle(entry_pos);
         entries[i] = entry;
         entry_pos = entry.next;
+        entries_count++;
     }
 
     *b_entries = entries;
-    return entries_capacity;
+    return entries_count;
 }
 
 uint64_t get_free_section()
@@ -237,7 +257,7 @@ void init()
 
 bool get_voidelle_from_path(char *path, voidelle_t *b_voidelle)
 {
-    debug("ls'ing path: '%s'\n", path);
+    debug("Getting voidelle from path: '%s'\n", path);
     if (*path != VOIDELLE_ROOT_CHARACTER)
     {
         printf("Paths must be absolute when using ls.\n");
@@ -276,8 +296,12 @@ bool get_voidelle_from_path(char *path, voidelle_t *b_voidelle)
             debug("Checking against '%s'.\n", entry_name);
 
             if (strcmp(folder_name, entry_name) != 0)
+            {
+                free(entry_name);
                 continue;
+            }
 
+            free(entry_name);
             dir = entries[i];
             found = true;
             break;
@@ -308,30 +332,65 @@ bool get_voidelle_from_path(char *path, voidelle_t *b_voidelle)
     return true;
 }
 
-void display_entry(voidelle_t velle, size_t level)
+void display_entry(voidelle_t velle, size_t level, enum Ls_Options option)
 {
     char *velle_name = get_voidelle_name(velle);
-    for (size_t i = 0; i < level; i++)
-        printf(" |");
 
-    printf(" %s\n", velle_name);
+    if (option == LS_TREE)
+    {
+        for (size_t i = 0; i < level; i++)
+            printf(" |");
+    }
+    else if (option == LS_LONG)
+    {
+        printf("%u%u%u",
+               (velle.owner_permission << 1) & 1,
+               (velle.owner_permission << 2) & 2,
+               (velle.owner_permission << 3) & 4);
+        printf("%u%u%u",
+               (velle.others_permission << 1) & 1,
+               (velle.others_permission << 2) & 2,
+               (velle.others_permission << 3) & 4);
+        printf(" (%lu) ", velle.owner_id);
+        printf("%lu %s %u %02u:%02u:%02u",
+               velle.modify_year,
+               months[velle.modify_date[0]],
+               velle.modify_date[1],
+               velle.modify_date[2],
+               velle.modify_date[3],
+               velle.modify_date[4]);
+    }
+
+    if (velle.flags & VOIDELLE_DIRECTORY)
+        printf(" \e[1;34m%s\e[0m\n", velle_name);
+    else
+        printf(" %s", velle_name);
+
     if ((velle.flags) & VOIDELLE_DIRECTORY)
     {
         voidelle_t *entries;
         size_t entries_count = get_entries(velle, &entries);
 
         for (size_t i = 0; i < entries_count; i++)
-            display_entry(entries[i], level + 1);
+            display_entry(entries[i], level + 1, option);
+        free(entries);
     }
 
     free(velle_name);
 }
 
-void ls(char *path)
+void ls(char *path, enum Ls_Options flag)
 {
+    debug("Command ls called with path: '%s'\n", path);
+
     voidelle_t root;
-    if (!get_voidelle_from_path(path, &root))
+    if (*path != 0 && !get_voidelle_from_path(path, &root))
+    {
+        printf("Invalid path.\n");
         return;
+    }
+    else if (*path == 0)
+        root = get_voidelle(VOIDELLE_SIZE);
 
     char *root_name = get_voidelle_name(root);
 
@@ -349,10 +408,11 @@ void ls(char *path)
     for (size_t i = 0; i < entries_count; i++)
     {
         debug("Displaying voidelle %lu & name %lu\n", entries[i].pos, entries[i].name);
-        display_entry(entries[i], 1);
+        display_entry(entries[i], 1, flag);
     }
 
     printf("\n");
+    free(entries);
     free(root_name);
 }
 
@@ -416,6 +476,7 @@ void make(char *path, uint64_t flags)
         }
 
         neighbour.next = voidelle.pos;
+        fseek(disk, neighbour.pos, SEEK_SET);
         fwrite(&neighbour, sizeof(voidelle_t), 1, disk);
     }
 }
