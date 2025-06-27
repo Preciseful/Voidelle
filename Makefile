@@ -1,12 +1,15 @@
-FILES=main.c
+FILES=main.c commands.c
+COPS=-DDEBUG_RELEASE -g
+DISK=/dev/sdc3
 
 all: build run
+voidelle: build
 
 build:
-	gcc $(FILES) -o voidelle
+	@gcc $(COPS) $(FILES) -o voidelle
 
 run: voidelle
-	./voidelle
+	@./voidelle $(DISK) ls \*
 
 clean: voidelle
-	rm voidelle
+	@rm voidelle

@@ -1,0 +1,421 @@
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#include "commands.h"
+#include "voidelle.h"
+
+FILE *disk = 0;
+
+voidlet_t get_voidlet()
+{
+    voidlet_t voidlet;
+    fseek(disk, 0, SEEK_SET);
+    fread(&voidlet, sizeof(voidlet_t), 1, disk);
+
+    return voidlet;
+}
+
+voidelle_t get_voidelle(long seek)
+{
+    if (seek % VOIDELLE_SIZE != 0)
+        printf("get_voidelle: failed.\n");
+    voidelle_t voidelle;
+    fseek(disk, seek, SEEK_SET);
+    fread(&voidelle, sizeof(voidelle_t), 1, disk);
+
+    return voidelle;
+}
+
+char *get_voidelle_name(voidelle_t voidelle)
+{
+    char *velle_name = malloc(VOIDELLE_SIZE);
+    velle_name[0] = '\0';
+    uint64_t name_pos = voidelle.name;
+
+    for (size_t i = 0; name_pos; i++)
+    {
+        if (i > 0)
+            velle_name = realloc(velle_name, VOIDELLE_SIZE * i);
+
+        voidite_t name;
+        fseek(disk, name_pos, SEEK_SET);
+        fread(&name, 512, 1, disk);
+
+        memcpy(velle_name + i * VOIDELLE_SIZE, name.data, VOIDELLE_SIZE - 2 * sizeof(unsigned long));
+        name_pos = name.next;
+    }
+
+    return velle_name;
+}
+
+size_t get_entries(voidelle_t voidelle, voidelle_t **b_entries)
+{
+    if (voidelle.content == 0)
+        return 0;
+
+    voidelle_t *entries = malloc(sizeof(voidelle_t));
+    size_t entries_capacity = 1;
+
+    uint64_t entry_pos = voidelle.content;
+    for (size_t i = 0; entry_pos; i++)
+    {
+        if (entries_capacity == i)
+        {
+            entries = realloc(entries, entries_capacity * 2);
+            entries_capacity *= 2;
+        }
+
+        voidelle_t entry = get_voidelle(entry_pos);
+        entries[i] = entry;
+        entry_pos = entry.next;
+    }
+
+    *b_entries = entries;
+    return entries_capacity;
+}
+
+uint64_t get_free_section()
+{
+    voidlet_t voidlet = get_voidlet();
+
+    for (size_t i = 0; i < voidlet.voidmap_size; i++)
+    {
+        unsigned char bits;
+        fseek(disk, voidlet.voidmap + i, SEEK_SET);
+        fread(&bits, 1, 1, disk);
+        int bit_pos = 0;
+
+        if (bits == UINT8_MAX)
+            continue;
+
+        if (bits == 0)
+            bits = 0b10000000;
+        else
+        {
+            bit_pos = __builtin_ctz(bits);
+            bit_pos--;
+            bits |= (1 << bit_pos);
+        }
+
+        uint64_t pos = VOIDELLE_SIZE * (i + (8 - bit_pos));
+        fseek(disk, voidlet.voidmap + i, SEEK_SET);
+        fwrite(&bits, 1, 1, disk);
+
+        return pos;
+    }
+
+    return 0;
+}
+
+bool create_voidelle(char *filename, uint64_t flags, voidelle_t *b_voidelle)
+{
+    voidelle_t voidelle;
+    voidelle.pos = get_free_section();
+
+    if (voidelle.pos == 0)
+    {
+        printf("Failed to get free section.\n");
+        return false;
+    }
+
+    size_t filename_length = strlen(filename) + 1;
+    uint64_t last_pos = 0, init_pos = 0;
+    for (size_t i = 0; i < filename_length; i += VOIDELLE_SIZE)
+    {
+        size_t current_length = filename_length - i;
+        uint64_t pos = get_free_section();
+
+        if (init_pos == 0)
+            init_pos = pos;
+        if (last_pos != 0)
+        {
+            voidite_t last_voidite;
+            fseek(disk, last_pos, SEEK_SET);
+            fread(&last_voidite, sizeof(voidite_t), 1, disk);
+
+            last_voidite.next = pos;
+
+            fseek(disk, last_pos, SEEK_SET);
+            fwrite(&last_voidite, sizeof(voidite_t), 1, disk);
+        }
+
+        voidite_t voidite;
+        voidite.next = 0;
+        voidite.pos = pos;
+        memcpy(voidite.data, filename, (current_length > VOIDELLE_SIZE ? VOIDELLE_SIZE : current_length));
+
+        fseek(disk, voidite.pos, SEEK_SET);
+        fwrite(&voidite, sizeof(voidite_t), 1, disk);
+
+        last_pos = pos;
+    }
+
+    voidite_t voidelle_name;
+    fseek(disk, init_pos, SEEK_SET);
+    fread(&voidelle_name, sizeof(voidite_t), 1, disk);
+
+    voidelle.name = voidelle_name.pos;
+    voidelle.next = 0;
+    voidelle.content = 0;
+    voidelle.content_size = 0;
+    voidelle.flags = flags;
+    voidelle.owner_id = 0;
+    voidelle.owner_permission = 0b111;
+    voidelle.others_permission = 0;
+    voidelle.create_year = 0;
+    voidelle.modify_year = 0;
+    memset(voidelle.create_date, 0, 5);
+    memset(voidelle.modify_date, 0, 5);
+
+    fseek(disk, voidelle.pos, SEEK_SET);
+    fwrite(&voidelle, sizeof(voidelle_t), 1, disk);
+    *b_voidelle = voidelle;
+
+    debug("Voidelle %lu & name %lu\n", voidelle.pos, voidelle.name);
+
+    return true;
+}
+
+void init()
+{
+    time_t t = time(0);
+    struct tm *tm = localtime(&t);
+    uint8_t cdate[5] = {(uint8_t)tm->tm_mon, (uint8_t)tm->tm_mday, (uint8_t)tm->tm_hour, (uint8_t)tm->tm_min, (uint8_t)tm->tm_sec};
+
+    fseek(disk, 0, SEEK_END);
+    long file_size = ftell(disk);
+    long voidmap_size = (file_size / 512 + 7) / 8;
+    long bitmap_offset = file_size - voidmap_size;
+    long voidmap = bitmap_offset - bitmap_offset % 512;
+
+    voidlet_t voidlet;
+    voidlet.voidelle_size = VOIDELLE_SIZE;
+    voidlet.voidmap_size = voidmap_size;
+    voidlet.voidmap = voidmap;
+    memcpy(voidlet.identifier, "VOID", 4);
+
+    debug("Voidmap starts at %lu.\n", voidlet.voidmap);
+
+    voidite_t root_name;
+    root_name.pos = VOIDELLE_SIZE * 2;
+    root_name.next = 0;
+    root_name.data[0] = VOIDELLE_ROOT_CHARACTER;
+    root_name.data[1] = '\0';
+
+    voidelle_t root;
+    root.flags = VOIDELLE_SYSTEM | VOIDELLE_DIRECTORY;
+    root.name = root_name.pos;
+    root.content = 0;
+    root.content_size = 0;
+    root.next = 0;
+    root.pos = VOIDELLE_SIZE;
+    root.owner_id = 0;
+    root.owner_permission = 0b111;
+    root.others_permission = 0;
+    root.create_year = tm->tm_year + 1900;
+    root.modify_year = tm->tm_year + 1900;
+    memcpy(root.create_date, cdate, sizeof(cdate));
+    memcpy(root.modify_date, cdate, sizeof(cdate));
+    memcpy(root.velle, "VELLE", 5);
+
+    fseek(disk, 0, SEEK_SET);
+    fwrite(&voidlet, sizeof(voidlet_t), 1, disk);
+    fseek(disk, VOIDELLE_SIZE, SEEK_SET);
+    fwrite(&root, sizeof(voidelle_t), 1, disk);
+    fseek(disk, VOIDELLE_SIZE * 2, SEEK_SET);
+    fwrite(&root_name, VOIDELLE_SIZE, 1, disk);
+
+    unsigned char *zero_buf = calloc(voidmap_size, 1);
+    zero_buf[0] = 0b11100000;
+    fseek(disk, voidmap, SEEK_SET);
+    fwrite(zero_buf, 1, voidmap, disk);
+    free(zero_buf);
+}
+
+bool get_voidelle_from_path(char *path, voidelle_t *b_voidelle)
+{
+    debug("ls'ing path: '%s'\n", path);
+    if (*path != VOIDELLE_ROOT_CHARACTER)
+    {
+        printf("Paths must be absolute when using ls.\n");
+        return false;
+    }
+
+    path++;
+
+    voidelle_t dir = get_voidelle(VOIDELLE_SIZE);
+    for (size_t start = 0; start < strlen(path);)
+    {
+        size_t end = start;
+        while (path[end] && path[end] != '/')
+            end++;
+
+        size_t folder_path_size = end - start + 1;
+        char *folder_name = malloc(folder_path_size);
+        memcpy(folder_name, path + start, folder_path_size);
+
+        debug("Found subdirectory '%s' within the path. Checking it...\n", folder_name);
+
+        if (dir.content == 0)
+        {
+            printf("Directory '%s' does not exist.\n", folder_name);
+            free(folder_name);
+            return false;
+        }
+
+        voidelle_t *entries;
+        size_t entries_count = get_entries(dir, &entries);
+        bool found = false;
+
+        for (size_t i = 0; i < entries_count; i++)
+        {
+            char *entry_name = get_voidelle_name(entries[i]);
+            debug("Checking against '%s'.\n", entry_name);
+
+            if (strcmp(folder_name, entry_name) != 0)
+                continue;
+
+            dir = entries[i];
+            found = true;
+            break;
+        }
+
+        if (!found)
+        {
+            printf("Directory '%s' does not exist.\n", folder_name);
+            free(folder_name);
+            free(entries);
+            return false;
+        }
+
+        if (!(dir.flags & VOIDELLE_DIRECTORY) && path[end])
+        {
+            printf("Cannot open files ('%s').\n", folder_name);
+            free(folder_name);
+            free(entries);
+            return false;
+        }
+
+        start = end + 1;
+        free(folder_name);
+        free(entries);
+    }
+
+    *b_voidelle = dir;
+    return true;
+}
+
+void display_entry(voidelle_t velle, size_t level)
+{
+    char *velle_name = get_voidelle_name(velle);
+    for (size_t i = 0; i < level; i++)
+        printf(" |");
+
+    printf(" %s\n", velle_name);
+    if ((velle.flags) & VOIDELLE_DIRECTORY)
+    {
+        voidelle_t *entries;
+        size_t entries_count = get_entries(velle, &entries);
+
+        for (size_t i = 0; i < entries_count; i++)
+            display_entry(entries[i], level + 1);
+    }
+
+    free(velle_name);
+}
+
+void ls(char *path)
+{
+    voidelle_t root;
+    if (!get_voidelle_from_path(path, &root))
+        return;
+
+    char *root_name = get_voidelle_name(root);
+
+    if (!(root.flags & VOIDELLE_DIRECTORY))
+    {
+        printf("Cannot use ls on files ('%s').\n", root_name);
+        free(root_name);
+        return;
+    }
+
+    voidelle_t *entries;
+    size_t entries_count = get_entries(root, &entries);
+
+    printf("%s\n", root_name);
+    for (size_t i = 0; i < entries_count; i++)
+    {
+        debug("Displaying voidelle %lu & name %lu\n", entries[i].pos, entries[i].name);
+        display_entry(entries[i], 1);
+    }
+
+    printf("\n");
+    free(root_name);
+}
+
+void make(char *path, uint64_t flags)
+{
+    voidelle_t dir;
+    size_t slash = 0;
+    size_t path_len = strlen(path);
+    if (path_len == 1)
+        return;
+
+    for (size_t i = path_len - 1; i >= 1; i--)
+    {
+        if (path[i] == '/')
+            slash = i;
+    }
+
+    if (slash == 0)
+        dir = get_voidelle(VOIDELLE_SIZE);
+    else
+    {
+        size_t new_path_len = path_len - slash;
+
+        char *new_path = malloc(new_path_len);
+        memcpy(new_path, path, new_path_len);
+        new_path[new_path_len - 1] = 0;
+
+        if (!get_voidelle_from_path(new_path, &dir))
+        {
+            printf("Directory '%s' does not exist.\n", new_path);
+            return;
+        }
+
+        free(new_path);
+    }
+
+    char *filename = path + slash + 1;
+    voidelle_t voidelle;
+    if (!create_voidelle(filename, flags, &voidelle))
+    {
+        printf("Failed to create a voidelle.\n");
+        return;
+    }
+
+    if (dir.content == 0)
+    {
+        dir.content = voidelle.pos;
+        fseek(disk, dir.pos, SEEK_SET);
+        fwrite(&dir, sizeof(voidelle_t), 1, disk);
+    }
+    else
+    {
+        voidelle_t neighbour;
+        fseek(disk, dir.content, SEEK_SET);
+        fread(&neighbour, sizeof(voidelle_t), 1, disk);
+
+        while (neighbour.next)
+        {
+            fseek(disk, neighbour.next, SEEK_SET);
+            fread(&neighbour, sizeof(voidelle_t), 1, disk);
+        }
+
+        neighbour.next = voidelle.pos;
+        fwrite(&neighbour, sizeof(voidelle_t), 1, disk);
+    }
+}
