@@ -5,7 +5,7 @@
 
 #define VOIDELLE_ROOT_CHARACTER '>'
 #define VOIDELLE_SIZE 512
-static_assert(VOIDELLE_SIZE > sizeof(uint64_t) * 2, "VOIDELLE_SIZE is too low! Must be higher than 16.");
+static_assert(VOIDELLE_SIZE > sizeof(voidelle_t) * 2, "VOIDELLE_SIZE is too low! Must be higher than a voidelle.");
 #define VOIDITE_CONTENT_SIZE (VOIDELLE_SIZE - sizeof(uint64_t) * 2)
 
 enum Voidelle_Entry_Flags

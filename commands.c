@@ -112,7 +112,10 @@ uint64_t get_free_section()
             continue;
 
         if (bits == 0)
+        {
             bits = 0b10000000;
+            bit_pos = 7;
+        }
         else
         {
             bit_pos = __builtin_ctz(bits);
@@ -120,7 +123,7 @@ uint64_t get_free_section()
             bits |= (1 << bit_pos);
         }
 
-        uint64_t pos = VOIDELLE_SIZE * (i + (8 - bit_pos));
+        uint64_t pos = (i * 8 + (7 - bit_pos)) * VOIDELLE_SIZE;
         fseek(disk, voidlet.voidmap + i, SEEK_SET);
         fwrite(&bits, 1, 1, disk);
 
@@ -273,8 +276,9 @@ bool get_voidelle_from_path(char *path, voidelle_t *b_voidelle)
         while (path[end] && path[end] != '/')
             end++;
 
-        size_t folder_path_size = end - start + 1;
-        char *folder_name = malloc(folder_path_size);
+        size_t folder_path_size = end - start;
+        char *folder_name = malloc(folder_path_size + 1);
+        folder_name[folder_path_size] = 0;
         memcpy(folder_name, path + start, folder_path_size);
 
         debug("Found subdirectory '%s' within the path. Checking it...\n", folder_name);
@@ -294,8 +298,13 @@ bool get_voidelle_from_path(char *path, voidelle_t *b_voidelle)
         {
             char *entry_name = get_voidelle_name(entries[i]);
             debug("Checking against '%s'.\n", entry_name);
+            if (folder_path_size != strlen(entry_name))
+            {
+                free(entry_name);
+                continue;
+            }
 
-            if (strcmp(folder_name, entry_name) != 0)
+            if (memcmp(folder_name, entry_name, folder_path_size) != 0)
             {
                 free(entry_name);
                 continue;
@@ -311,7 +320,8 @@ bool get_voidelle_from_path(char *path, voidelle_t *b_voidelle)
         {
             printf("Directory '%s' does not exist.\n", folder_name);
             free(folder_name);
-            free(entries);
+            if (entries_count > 0)
+                free(entries);
             return false;
         }
 
@@ -319,13 +329,15 @@ bool get_voidelle_from_path(char *path, voidelle_t *b_voidelle)
         {
             printf("Cannot open files ('%s').\n", folder_name);
             free(folder_name);
-            free(entries);
+            if (entries_count > 0)
+                free(entries);
             return false;
         }
 
         start = end + 1;
         free(folder_name);
-        free(entries);
+        if (entries_count > 0)
+            free(entries);
     }
 
     *b_voidelle = dir;
@@ -340,6 +352,7 @@ void display_entry(voidelle_t velle, size_t level, enum Ls_Options option)
     {
         for (size_t i = 0; i < level; i++)
             printf(" |");
+        printf(" ");
     }
     else if (option == LS_LONG)
     {
@@ -352,7 +365,7 @@ void display_entry(voidelle_t velle, size_t level, enum Ls_Options option)
                (velle.others_permission << 2) & 2,
                (velle.others_permission << 3) & 4);
         printf(" (%lu) ", velle.owner_id);
-        printf("%lu %s %u %02u:%02u:%02u",
+        printf("%lu %s %u %02u:%02u:%02u ",
                velle.modify_year,
                months[velle.modify_date[0]],
                velle.modify_date[1],
@@ -362,19 +375,23 @@ void display_entry(voidelle_t velle, size_t level, enum Ls_Options option)
     }
 
     if (velle.flags & VOIDELLE_DIRECTORY)
-        printf(" \e[1;34m%s\e[0m\n", velle_name);
+        printf("\e[1;34m%s\e[0m", velle_name);
     else
-        printf(" %s", velle_name);
+        printf("%s", velle_name);
 
-    if ((velle.flags) & VOIDELLE_DIRECTORY)
+    if (option == LS_TREE && ((velle.flags) & VOIDELLE_DIRECTORY))
     {
+        printf("\n");
         voidelle_t *entries;
         size_t entries_count = get_entries(velle, &entries);
 
         for (size_t i = 0; i < entries_count; i++)
             display_entry(entries[i], level + 1, option);
-        free(entries);
+        if (entries_count > 0)
+            free(entries);
     }
+    else if (option == LS_TREE)
+        printf("\n");
 
     free(velle_name);
 }
@@ -404,41 +421,62 @@ void ls(char *path, enum Ls_Options flag)
     voidelle_t *entries;
     size_t entries_count = get_entries(root, &entries);
 
-    printf("%s\n", root_name);
+    printf("%s:\n", root_name);
     for (size_t i = 0; i < entries_count; i++)
     {
         debug("Displaying voidelle %lu & name %lu\n", entries[i].pos, entries[i].name);
         display_entry(entries[i], 1, flag);
+        if (flag == LS_LONG)
+            printf("\n");
+        else if (flag == LS_NONE)
+            printf(" ");
     }
 
-    printf("\n");
-    free(entries);
+    if (flag == LS_NONE)
+        printf("\n");
+    if (entries_count > 0)
+        free(entries);
     free(root_name);
 }
 
 void make(char *path, uint64_t flags)
 {
+    if (path[0] != VOIDELLE_ROOT_CHARACTER)
+    {
+        printf("Paths must be absolute. ('%s')\n", path);
+        return;
+    }
+
+    if (path[1] == '\0')
+    {
+        printf("Cannot create a root directory. ('%s')\n", path);
+        return;
+    }
+
     voidelle_t dir;
     size_t slash = 0;
     size_t path_len = strlen(path);
     if (path_len == 1)
         return;
 
-    for (size_t i = path_len - 1; i >= 1; i--)
+    for (long i = path_len - 1; i >= 1; i--)
     {
         if (path[i] == '/')
+        {
             slash = i;
+            break;
+        }
     }
 
     if (slash == 0)
         dir = get_voidelle(VOIDELLE_SIZE);
     else
     {
-        size_t new_path_len = path_len - slash;
+        size_t new_path_len = slash;
 
-        char *new_path = malloc(new_path_len);
+        char *new_path = malloc(new_path_len + 1);
         memcpy(new_path, path, new_path_len);
-        new_path[new_path_len - 1] = 0;
+        new_path[new_path_len] = 0;
 
         if (!get_voidelle_from_path(new_path, &dir))
         {
