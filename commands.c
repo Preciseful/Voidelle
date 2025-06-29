@@ -35,7 +35,7 @@ voidlet_t get_voidlet()
 
 voidelle_t get_voidelle(long seek)
 {
-    if (seek % VOIDELLE_SIZE != 0)
+    if (seek % VOID_SIZE != 0)
         printf("get_voidelle: failed.\n");
     voidelle_t voidelle;
     fseek(disk, seek, SEEK_SET);
@@ -46,14 +46,14 @@ voidelle_t get_voidelle(long seek)
 
 char *get_voidelle_name(voidelle_t voidelle)
 {
-    char *velle_name = malloc(VOIDELLE_SIZE);
+    char *velle_name = malloc(VOID_SIZE);
     velle_name[0] = '\0';
     uint64_t name_pos = voidelle.name;
 
     for (size_t i = 0; name_pos; i++)
     {
         if (i > 0)
-            velle_name = realloc(velle_name, VOIDELLE_SIZE * i);
+            velle_name = realloc(velle_name, VOID_SIZE * i);
 
         voidite_t name;
         fseek(disk, name_pos, SEEK_SET);
@@ -61,9 +61,9 @@ char *get_voidelle_name(voidelle_t voidelle)
         name_pos = name.next;
 
         if (name_pos == 0)
-            strcpy(velle_name + i * VOIDELLE_SIZE, name.data);
+            strcpy(velle_name + i * VOID_SIZE, name.data);
         else
-            memcpy(velle_name + i * VOIDELLE_SIZE, name.data, VOIDELLE_SIZE - 2 * sizeof(unsigned long));
+            memcpy(velle_name + i * VOID_SIZE, name.data, VOID_SIZE - 2 * sizeof(unsigned long));
     }
 
     return velle_name;
@@ -123,7 +123,7 @@ uint64_t get_free_section()
             bits |= (1 << bit_pos);
         }
 
-        uint64_t pos = (i * 8 + (7 - bit_pos)) * VOIDELLE_SIZE;
+        uint64_t pos = (i * 8 + (7 - bit_pos)) * VOID_SIZE;
         fseek(disk, voidlet.voidmap + i, SEEK_SET);
         fwrite(&bits, 1, 1, disk);
 
@@ -146,7 +146,7 @@ bool create_voidelle(char *filename, uint64_t flags, voidelle_t *b_voidelle)
 
     size_t filename_length = strlen(filename) + 1;
     uint64_t last_pos = 0, init_pos = 0;
-    for (size_t i = 0; i < filename_length; i += VOIDELLE_SIZE)
+    for (size_t i = 0; i < filename_length; i += VOID_SIZE)
     {
         size_t current_length = filename_length - i;
         uint64_t pos = get_free_section();
@@ -168,7 +168,7 @@ bool create_voidelle(char *filename, uint64_t flags, voidelle_t *b_voidelle)
         voidite_t voidite;
         voidite.next = 0;
         voidite.pos = pos;
-        memcpy(voidite.data, filename, (current_length > VOIDELLE_SIZE ? VOIDELLE_SIZE : current_length));
+        memcpy(voidite.data, filename, (current_length > VOID_SIZE ? VOID_SIZE : current_length));
 
         fseek(disk, voidite.pos, SEEK_SET);
         fwrite(&voidite, sizeof(voidite_t), 1, disk);
@@ -220,7 +220,7 @@ void init()
     long voidmap = bitmap_offset - bitmap_offset % 512;
 
     voidlet_t voidlet;
-    voidlet.voidelle_size = VOIDELLE_SIZE;
+    voidlet.void_size = VOID_SIZE;
     voidlet.voidmap_size = voidmap_size;
     voidlet.voidmap = voidmap;
     memcpy(voidlet.identifier, "VOID", 4);
@@ -228,7 +228,7 @@ void init()
     debug("Voidmap starts at %lu.\n", voidlet.voidmap);
 
     voidite_t root_name;
-    root_name.pos = VOIDELLE_SIZE * 2;
+    root_name.pos = VOID_SIZE * 2;
     root_name.next = 0;
     root_name.data[0] = VOIDELLE_ROOT_CHARACTER;
     root_name.data[1] = '\0';
@@ -239,7 +239,7 @@ void init()
     root.content = 0;
     root.content_size = 0;
     root.next = 0;
-    root.pos = VOIDELLE_SIZE;
+    root.pos = VOID_SIZE;
     root.owner_id = 0;
     root.owner_permission = 0b111;
     root.others_permission = 0;
@@ -251,10 +251,10 @@ void init()
 
     fseek(disk, 0, SEEK_SET);
     fwrite(&voidlet, sizeof(voidlet_t), 1, disk);
-    fseek(disk, VOIDELLE_SIZE, SEEK_SET);
+    fseek(disk, VOID_SIZE, SEEK_SET);
     fwrite(&root, sizeof(voidelle_t), 1, disk);
-    fseek(disk, VOIDELLE_SIZE * 2, SEEK_SET);
-    fwrite(&root_name, VOIDELLE_SIZE, 1, disk);
+    fseek(disk, VOID_SIZE * 2, SEEK_SET);
+    fwrite(&root_name, VOID_SIZE, 1, disk);
 
     unsigned char *zero_buf = calloc(voidmap_size, 1);
     zero_buf[0] = 0b11100000;
@@ -274,7 +274,7 @@ bool get_voidelle_from_path(char *path, voidelle_t *b_voidelle)
 
     path++;
 
-    voidelle_t dir = get_voidelle(VOIDELLE_SIZE);
+    voidelle_t dir = get_voidelle(VOID_SIZE);
     for (size_t start = 0; start < strlen(path);)
     {
         size_t end = start;
@@ -412,7 +412,7 @@ void ls(char *path, enum Ls_Options flag)
         return;
     }
     else if (*path == 0)
-        root = get_voidelle(VOIDELLE_SIZE);
+        root = get_voidelle(VOID_SIZE);
 
     char *root_name = get_voidelle_name(root);
 
@@ -474,7 +474,7 @@ void make(char *path, uint64_t flags)
     }
 
     if (slash == 0)
-        dir = get_voidelle(VOIDELLE_SIZE);
+        dir = get_voidelle(VOID_SIZE);
     else
     {
         size_t new_path_len = slash;

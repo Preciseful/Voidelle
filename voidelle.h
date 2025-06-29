@@ -4,8 +4,8 @@
 #include <assert.h>
 
 #define VOIDELLE_ROOT_CHARACTER '>'
-#define VOIDELLE_SIZE 512
-#define VOIDITE_CONTENT_SIZE (VOIDELLE_SIZE - sizeof(uint64_t) * 2)
+#define VOID_SIZE 512
+#define VOIDITE_CONTENT_SIZE (VOID_SIZE - sizeof(uint64_t) * 2)
 
 enum Voidelle_Entry_Flags
 {
@@ -18,7 +18,7 @@ enum Voidelle_Entry_Flags
 typedef struct voidlet
 {
     uint8_t identifier[4];
-    uint64_t voidelle_size;
+    uint64_t void_size;
     uint64_t voidmap_size;
     uint64_t voidmap;
 } __attribute__((packed)) voidlet_t;
@@ -40,7 +40,6 @@ typedef struct voidelle
     uint64_t next;
     uint64_t pos;
     uint64_t create_year;
-    // MONTH | DAY | HOUR | MINUTE | SECOND
     uint8_t create_date[5];
     uint64_t modify_year;
     uint8_t modify_date[5];
@@ -49,4 +48,4 @@ typedef struct voidelle
     uint8_t owner_permission;
 } __attribute__((packed)) voidelle_t;
 
-static_assert(VOIDELLE_SIZE > sizeof(voidelle_t) * 2, "VOIDELLE_SIZE is too low! Must be higher than a voidelle.");
+static_assert(VOID_SIZE > sizeof(voidelle_t) * 2, "VOID_SIZE is too low! Must be higher than a voidelle.");
