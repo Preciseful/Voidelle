@@ -27,7 +27,7 @@ For example, a directory listing such as
 ## Types of entries
 
 ### Voidlet
-> [!NOTE]  
+> [!NOTE]
 > The term `void` is used as an umbrella term for all types of entries.
 
 This is the header of the current mounted filesystem. It contains crucial metadata such as the `voidmap`'s position and a void's maximum size. It is also used to identify a voidelle filesystem.
@@ -53,10 +53,10 @@ This is the basic entry for files and directories. It contains metadata such as 
 
 - `velle` (5 bytes): the header. It should spell out `VELLE`.
 - `flags` (8 bytes):
-    - `0x1`: directory
-    - `0x2`: hidden
-    - `0x4`: system-reserved entry
-    - `0x8`: deleted/invalid entry
+    - `0x1`: directory.
+    - `0x2`: hidden.
+    - `0x4`: system-reserved entry.
+    - `0x8`: deleted/invalid entry.
     - An OS can choose to use the remaining bits for its own flags.
 - `name` (8 bytes): contains the name's `voidite` position.
 - `content` (8 bytes): contains the content's position.
@@ -76,13 +76,13 @@ This is the basic entry for files and directories. It contains metadata such as 
     - A superuser's ID could be 0 as an example.
 - `others_permission` (1 byte): the permissions of other users other than the owner.
     - The usual values are:
-        - `0x4`: write permissions
-        - `0x2`: read permissions
-        - `0x1`: execute permissions
-        - `0x7`: all of above
+        - `0x4`: write permissions.
+        - `0x2`: read permissions.
+        - `0x1`: execute permissions.
+        - `0x7`: all of above.
     - An OS can choose to use the rest of bits for its own purposes.
 - `owner_permission` (1 byte): the permissions of the owner.
-    - The usual values are similar to `others_permission`
+    - The usual values are similar to `others_permission`.
     - An OS can choose to use the rest of bits for its own purposes.
 </details>
 
@@ -104,7 +104,7 @@ It is meant to be used as a way to interact with a voidelle filesystem.
 
 ### Build
 1. Clone the repository.
-2. Run `make`
+2. Run `make`.
 > [!CAUTION]
 > Make sure the disk you're using is not of essential use as the initialization command will corrupt existing data.
 3. Run `./voidelle <DISK> init` in order to initialize the disk.
@@ -116,7 +116,7 @@ This section exists as there is no `--help` commands in the tool yet.
 Usage: `voidelle <DISK> [COMMAND]`
 
 - `DISK`:
-    - The disk to interact with. 
+    - The disk to interact with.
 
 
 > [!TIP]
@@ -126,7 +126,7 @@ Usage: `voidelle <DISK> [COMMAND]`
     - `init`:
         - Initializes the disk.
     - `ls [OPTIONS...] [DIRECTORY...]`:
-        - Displays the entries in `DIRECTORY`
+        - Displays the entries in `DIRECTORY`.
         - `DIRECTORY` must be absolute (start with >).
         - `OPTIONS`:
             - `-l`: long mode. Shows more comprehensive data on the entries.
