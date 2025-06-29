@@ -87,7 +87,7 @@ This is the basic entry for files and directories. It contains metadata such as 
 </details>
 
 ### Voidite
-This is the structure of any content required by `voidelle`. It is used primarily for the name, as well as for content too if it does not list files.
+This is the structure of any content required by `voidelle`. It is used primarily for the name, as well as for a file's content.
 
 <details>
     <summary>Explanation and order of members</summary>
