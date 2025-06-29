@@ -180,6 +180,10 @@ bool create_voidelle(char *filename, uint64_t flags, voidelle_t *b_voidelle)
     fseek(disk, init_pos, SEEK_SET);
     fread(&voidelle_name, sizeof(voidite_t), 1, disk);
 
+    time_t t = time(0);
+    struct tm *tm = localtime(&t);
+    uint8_t cdate[5] = {(uint8_t)tm->tm_mon, (uint8_t)tm->tm_mday, (uint8_t)tm->tm_hour, (uint8_t)tm->tm_min, (uint8_t)tm->tm_sec};
+
     voidelle.name = voidelle_name.pos;
     voidelle.next = 0;
     voidelle.content = 0;
@@ -188,10 +192,11 @@ bool create_voidelle(char *filename, uint64_t flags, voidelle_t *b_voidelle)
     voidelle.owner_id = 0;
     voidelle.owner_permission = 0b111;
     voidelle.others_permission = 0;
-    voidelle.create_year = 0;
-    voidelle.modify_year = 0;
-    memset(voidelle.create_date, 0, 5);
-    memset(voidelle.modify_date, 0, 5);
+    voidelle.create_year = tm->tm_year + 1900;
+    voidelle.modify_year = tm->tm_year + 1900;
+    memcpy(voidelle.create_date, cdate, sizeof(cdate));
+    memcpy(voidelle.modify_date, cdate, sizeof(cdate));
+    memcpy(voidelle.velle, "VELLE", 5);
 
     fseek(disk, voidelle.pos, SEEK_SET);
     fwrite(&voidelle, sizeof(voidelle_t), 1, disk);
