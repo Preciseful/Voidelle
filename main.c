@@ -29,6 +29,12 @@ void execute(int argc, char *argv[])
         return;
     }
 
+    if (memcmp(get_voidlet().identifier, "VOID", 4) != 0)
+    {
+        printf("Invalid voidelle filesystem.\n");
+        return;
+    }
+
     if (strcmp(option, "init") == 0)
     {
         init();
@@ -92,5 +98,6 @@ int main(int argc, char *argv[])
     }
 
     execute(argc - 1, argv + 1);
-    fclose(disk);
+    if (disk != 0)
+        fclose(disk);
 }
