@@ -97,3 +97,58 @@ This is the structure of any content required by `voidelle`. It is used primaril
     - A `voidite` can use the `next` member in order to expand on the content presented if it does not fit in the data's size.
 - `data` (`void_size - 16` bytes): the data being held.
 </details>
+
+
+## This tool
+It is meant to be used as a way to interact with a voidelle filesystem.
+
+### Build
+1. Clone the repository.
+2. Run `make`
+> [!CAUTION]
+> Make sure the disk you're using is not of essential use as the initialization command will corrupt existing data.
+3. Run `./voidelle <DISK> init` in order to initialize the disk.
+    - `<DISK>` is the disk you want to mount the filesystem on. Voidelle may need `sudo` to interact with the disk.
+4. Run `./voidelle <DISK> ls` to ensure it worked.
+
+### Usage
+This section exists as there is no `--help` commands in the tool yet.
+Usage: `voidelle <DISK> [COMMAND]`
+
+- `DISK`:
+    - The disk to interact with. 
+
+
+> [!TIP]
+>`>` is a special character in bash and other shells. If `>` is your root character, run with `\>` instead.
+
+- `COMMAND`:
+    - `init`:
+        - Initializes the disk.
+    - `ls [OPTIONS...] [DIRECTORY...]`:
+        - Displays the entries in `DIRECTORY`
+        - `DIRECTORY` must be absolute (start with >).
+        - `OPTIONS`:
+            - `-l`: long mode. Shows more comprehensive data on the entries.
+    - `tree [DIRECTORY...]`:
+        - Displays the entries in `DIRECTORY` in a tree format.
+        - `DIRECTORY` must be absolute (start with >).
+    - `touch [PATH...]`:
+        - Creates files in the `PATH` provided.
+        - The creation is not recursive.
+        - `PATH` must be absolute (start with >).
+    - `mkdir [PATH...]`:
+        - Creates directories in the `PATH` provided.
+        - The creation is not recursive.
+        - `PATH` must be absolute (start with >).
+
+### Future progress
+- Introducing more `COMMAND` options:
+    - `rm [PATH...]`:
+        - Removes the file in the `PATH` provided.
+        - `PATH` must be absolute (start with >).
+    - `rmdir [OPTIONS...] [PATH...]`:
+        - Removes the directory in the `PATH` provided.
+        - `PATH` must be absolute (start with >).
+        - `OPTIONS`:
+            - `-r`: recursively deletes everything inside the directory too.
