@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include "voidelle.h"
 #include "commands.h"
@@ -82,13 +84,22 @@ void execute(int argc, char *argv[])
     else if (strcmp(option, "touch") == 0)
     {
         while (argc)
-            make(eat_arg(&argc, &argv), 0);
+            make(eat_arg(&argc, &argv), 0, false);
     }
 
     else if (strcmp(option, "mkdir") == 0)
     {
+        bool recursive = false;
+        if (argc != 0 && strcmp(*argv, "-r") == 0)
+        {
+            recursive = true;
+            eat_arg(&argc, &argv);
+        }
+
         while (argc)
-            make(eat_arg(&argc, &argv), VOIDELLE_DIRECTORY);
+        {
+            make(eat_arg(&argc, &argv), VOIDELLE_DIRECTORY, recursive);
+        }
     }
 }
 

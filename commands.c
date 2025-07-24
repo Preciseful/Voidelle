@@ -444,7 +444,7 @@ void ls(char *path, enum Ls_Options flag)
     free(root_name);
 }
 
-void make(char *path, uint64_t flags)
+void make(char *path, uint64_t flags, bool recursive)
 {
     if (path[0] != VOIDELLE_ROOT_CHARACTER)
     {
@@ -483,6 +483,21 @@ void make(char *path, uint64_t flags)
         memcpy(new_path, path, new_path_len);
         new_path[new_path_len] = 0;
 
+        if (recursive)
+        {
+            for (unsigned long i = 0; i <= new_path_len; i++)
+            {
+                if (new_path[i] == '/' || new_path[i] == 0)
+                {
+                    new_path[i] = 0;
+                    make(new_path, VOIDELLE_DIRECTORY, false);
+                    new_path[i] = '/';
+                }
+            }
+
+            new_path[new_path_len] = 0;
+        }
+
         if (!get_voidelle_from_path(new_path, &dir))
         {
             printf("Directory '%s' does not exist.\n", new_path);
@@ -511,11 +526,21 @@ void make(char *path, uint64_t flags)
         voidelle_t neighbour;
         fseek(disk, dir.content, SEEK_SET);
         fread(&neighbour, sizeof(voidelle_t), 1, disk);
+        if (strcmp(get_voidelle_name(neighbour), filename) == 0)
+        {
+            printf("File %s already exists.\n", filename);
+            return;
+        }
 
         while (neighbour.next)
         {
             fseek(disk, neighbour.next, SEEK_SET);
             fread(&neighbour, sizeof(voidelle_t), 1, disk);
+            if (strcmp(get_voidelle_name(neighbour), filename) == 0)
+            {
+                printf("File %s already exists.\n", filename);
+                return;
+            }
         }
 
         neighbour.next = voidelle.pos;
