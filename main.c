@@ -3,8 +3,19 @@
 #include "voidelle.h"
 #include "commands.h"
 
-char *usage = "Usage: voidelle <disk> [OPTION]... [FILES]...\n"
-              "Interact with a Voidelle filesystem.\n";
+char *usage = "Usage: voidelle DISK OPTION... PATH...\n"
+              "Interact with a Voidelle filesystem.\n"
+              "\n"
+              "A DISK argument is required in order to interact with the filesystem.\n"
+              "PATH must be absolute.\n"
+              "\n"
+              "Commands:\n"
+              " init    initializes the disk with the Voidelle filesystem\n"
+              "          THIS MAKES PREVIOUS DATA UNUSABLE\n"
+              " ls      displays the entries in PATH\n"
+              " tree    displays the entries in PATH in a tree format\n"
+              " touch   creates the files in PATH\n"
+              " mkdir   creates the directories in PATH\n";
 
 char *eat_arg(int *argc, char **argv[])
 {
@@ -29,18 +40,16 @@ void execute(int argc, char *argv[])
         return;
     }
 
-    if (memcmp(get_voidlet().identifier, "VOID", 4) != 0)
-    {
-        printf("Invalid voidelle filesystem.\n");
-        return;
-    }
-
     if (strcmp(option, "init") == 0)
     {
         init();
         if (argc != 0)
             printf("No further arguments can be taken.\n");
     }
+
+    // check for VOID before going further
+    else if (memcmp(get_voidlet().identifier, "VOID", 4) != 0)
+        printf("Invalid voidelle filesystem.\n");
 
     else if (strcmp(option, "tree") == 0)
     {
@@ -86,6 +95,12 @@ void execute(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     if (argc == 1)
+    {
+        puts(usage);
+        return 0;
+    }
+
+    if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)
     {
         puts(usage);
         return 0;

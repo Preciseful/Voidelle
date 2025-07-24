@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include "voidelle.h"
 
 #ifdef DEBUG_RELEASE
 #define debug(msg, ...) printf(msg, __VA_ARGS__)
