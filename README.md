@@ -111,37 +111,6 @@ It is meant to be used as a way to interact with a voidelle filesystem.
     - `<DISK>` is the disk you want to mount the filesystem on. Voidelle may need `sudo` to interact with the disk.
 4. Run `./voidelle <DISK> ls` to ensure it worked.
 
-### Usage
-This section exists as there is no `--help` commands in the tool yet.
-Usage: `voidelle <DISK> [COMMAND]`
-
-- `DISK`:
-    - The disk to interact with.
-
-
-> [!TIP]
->`>` is a special character in bash and other shells. If `>` is your root character, run with `\>` instead.
-
-- `COMMAND`:
-    - `init`:
-        - Initializes the disk.
-    - `ls [OPTIONS...] [DIRECTORY...]`:
-        - Displays the entries in `DIRECTORY`.
-        - `DIRECTORY` must be absolute (start with >).
-        - `OPTIONS`:
-            - `-l`: long mode. Shows more comprehensive data on the entries.
-    - `tree [DIRECTORY...]`:
-        - Displays the entries in `DIRECTORY` in a tree format.
-        - `DIRECTORY` must be absolute (start with >).
-    - `touch [PATH...]`:
-        - Creates files in the `PATH` provided.
-        - The creation is not recursive.
-        - `PATH` must be absolute (start with >).
-    - `mkdir [PATH...]`:
-        - Creates directories in the `PATH` provided.
-        - The creation is not recursive.
-        - `PATH` must be absolute (start with >).
-
 ### Future progress
 - Introducing more `COMMAND` options:
     - `rm [PATH...]`:
