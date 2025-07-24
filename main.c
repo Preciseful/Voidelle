@@ -15,11 +15,11 @@ char *usage = "Usage: voidelle DISK OPTION... PATH...\n"
               " init    initializes the disk with the Voidelle filesystem\n"
               "          THIS MAKES PREVIOUS DATA UNUSABLE\n"
               " ls      displays the entries in PATH\n"
-              "     -l  displays extra data on the entries"
+              "     -l  displays extra data on the entries\n"
               " tree    displays the entries in PATH in a tree format\n"
               " touch   creates the files in PATH\n"
               " mkdir   creates the directories in PATH\n"
-              "     -r  creates all directories recursively";
+              "     -r  creates all directories recursively\n";
 
 char *eat_arg(int *argc, char **argv[])
 {
