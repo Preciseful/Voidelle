@@ -711,6 +711,17 @@ void write(char *path, char *data)
         return;
     }
 
+    size_t old_content = voidelle.content;
+    while (old_content)
+    {
+        voidite_t voidite;
+        fseek(disk, old_content, SEEK_SET);
+        fread(&voidite, sizeof(voidite_t), 1, disk);
+
+        invalidate_section(voidite.pos);
+        old_content = voidite.next;
+    }
+
     size_t data_len = strlen(data) + 1;
     uint64_t last_pos = 0, init_pos = 0;
 
@@ -744,7 +755,38 @@ void write(char *path, char *data)
         last_pos = pos;
     }
 
+    voidelle.content_size = data_len;
     voidelle.content = init_pos;
     fseek(disk, voidelle.pos, SEEK_SET);
     fwrite(&voidelle, sizeof(voidelle_t), 1, disk);
+}
+
+void cat(char *path)
+{
+    voidelle_t voidelle;
+    if (!get_voidelle_from_path(path, &voidelle))
+        return;
+    if (voidelle.flags & VOIDELLE_DIRECTORY)
+    {
+        printf("Cannot read contents of directories.\n");
+        return;
+    }
+
+    uint64_t data_pos = voidelle.content;
+    size_t leftover = voidelle.content_size;
+
+    while (data_pos)
+    {
+        voidite_t data;
+        fseek(disk, data_pos, SEEK_SET);
+        fread(&data, sizeof(voidite_t), 1, disk);
+
+        for (size_t i = 0; i < (leftover > VOIDITE_CONTENT_SIZE ? VOIDITE_CONTENT_SIZE : leftover); i++)
+            printf("%c", data.data[i]);
+
+        leftover -= VOIDITE_CONTENT_SIZE;
+        data_pos = data.next;
+    }
+
+    printf("\n");
 }

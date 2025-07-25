@@ -26,15 +26,15 @@ char *usage = "Usage: voidelle DISK OPTION... PATH...\n"
 
 char *eat_arg(int *argc, char **argv[])
 {
-    char *ret = **argv;
-    (*argv)++;
-    (*argc)--;
-
-    if (argc < 0)
+    if (*argc == 0)
     {
         printf("Expected argument.\n");
         exit(-1);
     }
+
+    char *ret = **argv;
+    (*argv)++;
+    (*argc)--;
 
     return ret;
 }
@@ -126,6 +126,12 @@ void execute(int argc, char *argv[])
         char *path = eat_arg(&argc, &argv);
         char *data = eat_arg(&argc, &argv);
         write(path, data);
+    }
+
+    else if (strcmp(option, "cat") == 0)
+    {
+        while (argc)
+            cat(eat_arg(&argc, &argv));
     }
 
     else

@@ -25,3 +25,4 @@ void ls(char *path, enum Ls_Options flag);
 void make(char *path, uint64_t flags, bool recursive);
 void rm_file(char *path, bool recursive);
 void write(char *path, char *data);
+void cat(char *path);
