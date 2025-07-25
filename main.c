@@ -21,7 +21,8 @@ char *usage = "Usage: voidelle DISK OPTION... PATH...\n"
               " mkdir   creates the directories in PATH\n"
               "     -r  creates all directories recursively\n"
               " rm      removes the files/directories in PATH\n"
-              "     -r  removes all content inside the directory recursively";
+              "     -r  removes all content inside the directory recursively\n"
+              " wr      write to a file";
 
 char *eat_arg(int *argc, char **argv[])
 {
