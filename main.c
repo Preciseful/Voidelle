@@ -47,11 +47,7 @@ void execute(int argc, char *argv[])
     }
 
     if (strcmp(option, "init") == 0)
-    {
         init();
-        if (argc != 0)
-            printf("No further arguments can be taken.\n");
-    }
 
     // check for VOID before going further
     else if (memcmp(get_voidlet().identifier, "VOID", 4) != 0)
@@ -119,6 +115,9 @@ void execute(int argc, char *argv[])
 
     else
         printf("Unknown option: '%s'.\n", option);
+
+    if (argc != 0)
+        printf("No further arguments can be taken.\n");
 }
 
 int main(int argc, char *argv[])
