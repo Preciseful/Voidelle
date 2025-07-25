@@ -110,14 +110,3 @@ It is meant to be used as a way to interact with a voidelle filesystem.
 3. Run `./voidelle <DISK> init` in order to initialize the disk.
     - `<DISK>` is the disk you want to mount the filesystem on. Voidelle may need `sudo` to interact with the disk.
 4. Run `./voidelle <DISK> ls` to ensure it worked.
-
-### Future progress
-- Introducing more `COMMAND` options:
-    - `rm [PATH...]`:
-        - Removes the file in the `PATH` provided.
-        - `PATH` must be absolute (start with >).
-    - `rmdir [OPTIONS...] [PATH...]`:
-        - Removes the directory in the `PATH` provided.
-        - `PATH` must be absolute (start with >).
-        - `OPTIONS`:
-            - `-r`: recursively deletes everything inside the directory too.
