@@ -705,6 +705,12 @@ void write(char *path, char *data)
     if (!get_voidelle_from_path(path, &voidelle))
         return;
 
+    if (voidelle.flags & VOIDELLE_DIRECTORY)
+    {
+        printf("Cannot write to directory.\n");
+        return;
+    }
+
     size_t data_len = strlen(data) + 1;
     uint64_t last_pos = 0, init_pos = 0;
 
