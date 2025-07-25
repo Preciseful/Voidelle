@@ -28,6 +28,13 @@ char *eat_arg(int *argc, char **argv[])
     char *ret = **argv;
     (*argv)++;
     (*argc)--;
+
+    if (argc < 0)
+    {
+        printf("Expected argument.\n");
+        exit(-1);
+    }
+
     return ret;
 }
 
@@ -111,6 +118,13 @@ void execute(int argc, char *argv[])
 
         while (argc)
             rm_file(eat_arg(&argc, &argv), recursive);
+    }
+
+    else if (strcmp(option, "wr") == 0)
+    {
+        char *path = eat_arg(&argc, &argv);
+        char *data = eat_arg(&argc, &argv);
+        write(path, data);
     }
 
     else

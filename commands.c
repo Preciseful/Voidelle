@@ -162,11 +162,11 @@ bool create_voidelle(char *filename, uint64_t flags, voidelle_t *b_voidelle)
         return false;
     }
 
-    size_t filename_length = strlen(filename) + 1;
+    size_t filename_len = strlen(filename) + 1;
     uint64_t last_pos = 0, init_pos = 0;
-    for (size_t i = 0; i < filename_length; i += VOID_SIZE)
+    for (size_t i = 0; i < filename_len; i += VOIDITE_CONTENT_SIZE)
     {
-        size_t current_length = filename_length - i;
+        size_t current_len = filename_len - i;
         uint64_t pos = get_free_section();
 
         if (init_pos == 0)
@@ -186,7 +186,7 @@ bool create_voidelle(char *filename, uint64_t flags, voidelle_t *b_voidelle)
         voidite_t voidite;
         voidite.next = 0;
         voidite.pos = pos;
-        memcpy(voidite.data, filename, (current_length > VOID_SIZE ? VOID_SIZE : current_length));
+        memcpy(voidite.data, filename + i, (current_len > VOIDITE_CONTENT_SIZE ? VOIDITE_CONTENT_SIZE : current_len));
 
         fseek(disk, voidite.pos, SEEK_SET);
         fwrite(&voidite, sizeof(voidite_t), 1, disk);
@@ -697,4 +697,48 @@ void rm_file(char *path, bool recursive)
             child_pos = child.next;
         }
     }
+}
+
+void write(char *path, char *data)
+{
+    voidelle_t voidelle;
+    if (!get_voidelle_from_path(path, &voidelle))
+        return;
+
+    size_t data_len = strlen(data) + 1;
+    uint64_t last_pos = 0, init_pos = 0;
+
+    for (size_t i = 0; i < data_len; i += VOIDITE_CONTENT_SIZE)
+    {
+        size_t current_len = data_len - i;
+        uint64_t pos = get_free_section();
+
+        if (init_pos == 0)
+            init_pos = pos;
+        if (last_pos != 0)
+        {
+            voidite_t last_voidite;
+            fseek(disk, last_pos, SEEK_SET);
+            fread(&last_voidite, sizeof(voidite_t), 1, disk);
+
+            last_voidite.next = pos;
+
+            fseek(disk, last_pos, SEEK_SET);
+            fwrite(&last_voidite, sizeof(voidite_t), 1, disk);
+        }
+
+        voidite_t voidite;
+        voidite.next = 0;
+        voidite.pos = pos;
+        memcpy(voidite.data, data + i, (current_len > VOIDITE_CONTENT_SIZE ? VOIDITE_CONTENT_SIZE : current_len));
+
+        fseek(disk, voidite.pos, SEEK_SET);
+        fwrite(&voidite, sizeof(voidite_t), 1, disk);
+
+        last_pos = pos;
+    }
+
+    voidelle.content = init_pos;
+    fseek(disk, voidelle.pos, SEEK_SET);
+    fwrite(&voidelle, sizeof(voidelle_t), 1, disk);
 }
