@@ -799,6 +799,4 @@ void cat(char *path)
         leftover -= VOIDITE_CONTENT_SIZE;
         data_pos = data.next;
     }
-
-    printf("\n");
 }
