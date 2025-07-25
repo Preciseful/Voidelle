@@ -99,10 +99,24 @@ void execute(int argc, char *argv[])
         }
 
         while (argc)
-        {
             make(eat_arg(&argc, &argv), VOIDELLE_DIRECTORY, recursive);
-        }
     }
+
+    else if (strcmp(option, "rm") == 0)
+    {
+        bool recursive = false;
+        if (argc != 0 && strcmp(*argv, "-r") == 0)
+        {
+            recursive = true;
+            eat_arg(&argc, &argv);
+        }
+
+        while (argc)
+            rm_file(eat_arg(&argc, &argv), recursive);
+    }
+
+    else
+        printf("Unknown option: '%s'.\n", option);
 }
 
 int main(int argc, char *argv[])

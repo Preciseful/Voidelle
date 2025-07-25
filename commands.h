@@ -23,3 +23,4 @@ voidlet_t get_voidlet();
 void init();
 void ls(char *path, enum Ls_Options flag);
 void make(char *path, uint64_t flags, bool recursive);
+void rm_file(char *path, bool recursive);

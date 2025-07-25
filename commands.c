@@ -133,6 +133,24 @@ uint64_t get_free_section()
     return 0;
 }
 
+void invalidate_section(uint64_t pos)
+{
+    voidlet_t voidlet = get_voidlet();
+
+    uint64_t section = pos / VOID_SIZE;
+    size_t i = section / 8;
+    int bit_pos = 7 - (section % 8);
+
+    unsigned char bits;
+    fseek(disk, voidlet.voidmap + i, SEEK_SET);
+    fread(&bits, 1, 1, disk);
+
+    bits &= ~(1 << bit_pos);
+
+    fseek(disk, voidlet.voidmap + i, SEEK_SET);
+    fwrite(&bits, 1, 1, disk);
+}
+
 bool create_voidelle(char *filename, uint64_t flags, voidelle_t *b_voidelle)
 {
     voidelle_t voidelle;
@@ -444,25 +462,25 @@ void ls(char *path, enum Ls_Options flag)
     free(root_name);
 }
 
-void make(char *path, uint64_t flags, bool recursive)
+char *get_filename(char *path, voidelle_t *parent, bool create_parents)
 {
     if (path[0] != VOIDELLE_ROOT_CHARACTER)
     {
         printf("Paths must be absolute. ('%s')\n", path);
-        return;
+        return "";
     }
 
     if (path[1] == '\0')
     {
         printf("Cannot create a root directory. ('%s')\n", path);
-        return;
+        return "";
     }
 
     voidelle_t dir;
     size_t slash = 0;
     size_t path_len = strlen(path);
     if (path_len == 1)
-        return;
+        return "";
 
     for (long i = path_len - 1; i >= 1; i--)
     {
@@ -483,7 +501,7 @@ void make(char *path, uint64_t flags, bool recursive)
         memcpy(new_path, path, new_path_len);
         new_path[new_path_len] = 0;
 
-        if (recursive)
+        if (create_parents)
         {
             for (unsigned long i = 0; i <= new_path_len; i++)
             {
@@ -501,14 +519,28 @@ void make(char *path, uint64_t flags, bool recursive)
         if (!get_voidelle_from_path(new_path, &dir))
         {
             printf("Directory '%s' does not exist.\n", new_path);
-            return;
+            return "";
         }
 
         free(new_path);
     }
 
+    if (parent != 0)
+        *parent = dir;
+
     char *filename = path + slash + 1;
+    return filename;
+}
+
+void make(char *path, uint64_t flags, bool recursive)
+{
+    voidelle_t dir;
     voidelle_t voidelle;
+
+    char *filename = get_filename(path, &dir, recursive);
+    if (filename[0] == '\0')
+        return;
+
     if (!create_voidelle(filename, flags, &voidelle))
     {
         printf("Failed to create a voidelle.\n");
@@ -526,25 +558,143 @@ void make(char *path, uint64_t flags, bool recursive)
         voidelle_t neighbour;
         fseek(disk, dir.content, SEEK_SET);
         fread(&neighbour, sizeof(voidelle_t), 1, disk);
-        if (strcmp(get_voidelle_name(neighbour), filename) == 0)
+
+        char *neighbour_name = get_voidelle_name(neighbour);
+        if (strcmp(neighbour_name, filename) == 0)
         {
             printf("File %s already exists.\n", filename);
+            free(neighbour_name);
             return;
         }
+
+        free(neighbour_name);
 
         while (neighbour.next)
         {
             fseek(disk, neighbour.next, SEEK_SET);
             fread(&neighbour, sizeof(voidelle_t), 1, disk);
-            if (strcmp(get_voidelle_name(neighbour), filename) == 0)
+
+            neighbour_name = get_voidelle_name(neighbour);
+            if (strcmp(neighbour_name, filename) == 0)
             {
                 printf("File %s already exists.\n", filename);
+                free(neighbour_name);
                 return;
             }
+
+            free(neighbour_name);
         }
 
         neighbour.next = voidelle.pos;
         fseek(disk, neighbour.pos, SEEK_SET);
         fwrite(&neighbour, sizeof(voidelle_t), 1, disk);
+    }
+}
+
+bool rm_voidelle(voidelle_t dir, char *filename, bool ignore_content, voidelle_t *bvoidelle)
+{
+    voidelle_t child;
+    voidelle_t previous_child;
+    uint64_t child_pos = dir.content;
+
+    while (child_pos != 0)
+    {
+        fseek(disk, child_pos, SEEK_SET);
+        fread(&child, sizeof(voidelle_t), 1, disk);
+
+        char *child_name = get_voidelle_name(child);
+        if (strcmp(get_voidelle_name(child), filename) == 0)
+        {
+            free(child_name);
+            break;
+        }
+
+        free(child_name);
+
+        previous_child = child;
+        child_pos = child.next;
+    }
+
+    if (child_pos == 0)
+    {
+        printf("File '%s' does not exist.\n", filename);
+        return false;
+    }
+
+    if (child.content != 0 && !ignore_content)
+    {
+        printf("Directory '%s' is not empty.\n", filename);
+        return false;
+    }
+
+    if (child_pos == dir.content)
+    {
+        dir.content = child.next;
+        fseek(disk, dir.pos, SEEK_SET);
+        fwrite(&dir, sizeof(voidelle_t), 1, disk);
+        debug("Removed child from parent directory: %lu.\n", dir.pos);
+    }
+    else
+    {
+        previous_child.next = child.next;
+        fseek(disk, previous_child.pos, SEEK_SET);
+        fwrite(&previous_child, sizeof(voidelle_t), 1, disk);
+        debug("Removed child from neighbour: %lu.\n", previous_child.pos);
+    }
+
+    uint64_t name_pos = child.name;
+    voidite_t name;
+    while (name_pos)
+    {
+        fseek(disk, name_pos, SEEK_SET);
+        fread(&name, sizeof(voidite_t), 1, disk);
+
+        invalidate_section(name_pos);
+        debug("Invalidating name: %lu.\n", name_pos);
+        name_pos = name.next;
+    }
+
+    invalidate_section(child.pos);
+    debug("Invalidated child: %lu.\n", child.pos);
+    *bvoidelle = child;
+    return true;
+}
+
+void rm_file(char *path, bool recursive)
+{
+    voidelle_t dir;
+    char *filename = get_filename(path, &dir, false);
+    if (filename[0] == '\0')
+        return;
+
+    voidelle_t parent;
+    if (!rm_voidelle(dir, filename, recursive, &parent))
+        return;
+
+    if (recursive)
+    {
+        voidelle_t child;
+        uint64_t child_pos = parent.content;
+        size_t path_len = strlen(path);
+
+        while (child_pos != 0)
+        {
+            fseek(disk, child_pos, SEEK_SET);
+            fread(&child, sizeof(voidelle_t), 1, disk);
+
+            char *child_name = get_voidelle_name(child);
+            char *new_path = malloc(path_len + strlen(child_name) + 2);
+
+            strcpy(new_path, path);
+            new_path[path_len] = '/';
+            new_path[path_len + 1] = 0;
+
+            strcat(new_path, child_name);
+
+            rm_file(new_path, true);
+
+            free(child_name);
+            child_pos = child.next;
+        }
     }
 }
