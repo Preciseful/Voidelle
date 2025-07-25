@@ -656,7 +656,7 @@ bool rm_voidelle(voidelle_t dir, char *filename, bool ignore_content, voidelle_t
 
     uint64_t content_pos = child.content;
     voidite_t content;
-    while (content_pos)
+    while (content_pos && !(child.flags & VOIDELLE_DIRECTORY))
     {
         fseek(disk, content_pos, SEEK_SET);
         fread(&content, sizeof(voidite_t), 1, disk);
