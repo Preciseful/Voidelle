@@ -5,7 +5,7 @@
 #include "voidelle.h"
 #include "commands.h"
 
-char *usage = "Usage: voidelle DISK OPTION... PATH...\n"
+char *usage = "Usage: voidelle DISK [OPTION]... PATH...\n"
               "Interact with a Voidelle filesystem.\n"
               "\n"
               "A DISK argument is required in order to interact with the filesystem.\n"
@@ -14,16 +14,34 @@ char *usage = "Usage: voidelle DISK OPTION... PATH...\n"
               "Commands:\n"
               " init    initializes the disk with the Voidelle filesystem\n"
               "          THIS MAKES PREVIOUS DATA UNUSABLE\n"
-              " ls      displays the entries in PATH\n"
-              "     -l  displays extra data on the entries\n"
-              " tree    displays the entries in PATH in a tree format\n"
+              " ls      list the entries in PATH\n"
+              " tree    list the entries in PATH in a tree format\n"
               " touch   creates the files in PATH\n"
               " mkdir   creates the directories in PATH\n"
-              "     -r  creates all directories recursively\n"
-              " rm      removes the files/directories in PATH\n"
-              "     -r  removes all content inside the directory recursively\n"
+              " rm      removes the entries in PATH\n"
               " wr      write to a file\n"
-              " cat     read file's content\n";
+              " cat     display PATH file's content\n";
+
+char *ls_usage = "Usage: ls [OPTION...] PATH...\n"
+                 "List the entries in PATH.\n"
+                 "\n"
+                 "Options:\n"
+                 " -l   display extra data about the entries\n";
+
+char *rm_usage = "Usage: rm [OPTION...] PATH...\n"
+                 "Remove the entries in PATH.\n"
+                 "\n"
+                 "Options:\n"
+                 " -r   remove content recursively (used for directories)\n";
+
+char *mkdir_usage = "Usage: mkdir [OPTION...] PATH...\n"
+                    "Create the directories in PATH.\n"
+                    "\n"
+                    "Options:\n"
+                    " -r   create directories recursively\n";
+
+char *wr_usage = "Usage: wr PATH DATA\n"
+                 "Write DATA in the entry found in PATH.\n";
 
 char *eat_arg(int *argc, char **argv[])
 {
@@ -72,6 +90,14 @@ void execute(int argc, char *argv[])
 
     else if (strcmp(option, "ls") == 0)
     {
+        if (argc == 0 ||
+            (argc != 0 && (strcmp(*argv, "-h") == 0 || strcmp(*argv, "--help") == 0)))
+        {
+            eat_arg(&argc, &argv);
+            puts(ls_usage);
+            goto finish;
+        }
+
         enum Ls_Options option = LS_NONE;
         if (argc != 0 && strcmp(*argv, "-l") == 0)
         {
@@ -98,6 +124,14 @@ void execute(int argc, char *argv[])
 
     else if (strcmp(option, "mkdir") == 0)
     {
+        if (argc == 0 ||
+            (argc != 0 && (strcmp(*argv, "-h") == 0 || strcmp(*argv, "--help") == 0)))
+        {
+            eat_arg(&argc, &argv);
+            puts(mkdir_usage);
+            goto finish;
+        }
+
         bool recursive = false;
         if (argc != 0 && strcmp(*argv, "-r") == 0)
         {
@@ -111,6 +145,14 @@ void execute(int argc, char *argv[])
 
     else if (strcmp(option, "rm") == 0)
     {
+        if (argc == 0 ||
+            (argc != 0 && (strcmp(*argv, "-h") == 0 || strcmp(*argv, "--help") == 0)))
+        {
+            eat_arg(&argc, &argv);
+            puts(rm_usage);
+            goto finish;
+        }
+
         bool recursive = false;
         if (argc != 0 && strcmp(*argv, "-r") == 0)
         {
@@ -124,6 +166,14 @@ void execute(int argc, char *argv[])
 
     else if (strcmp(option, "wr") == 0)
     {
+        if (argc == 0 ||
+            (argc != 0 && (strcmp(*argv, "-h") == 0 || strcmp(*argv, "--help") == 0)))
+        {
+            eat_arg(&argc, &argv);
+            puts(wr_usage);
+            goto finish;
+        }
+
         char *path = eat_arg(&argc, &argv);
         char *data = eat_arg(&argc, &argv);
         write(path, data);
@@ -138,6 +188,7 @@ void execute(int argc, char *argv[])
     else
         printf("Unknown option: '%s'.\n", option);
 
+finish:
     if (argc != 0)
         printf("No further arguments can be taken.\n");
 }
