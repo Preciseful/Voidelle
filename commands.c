@@ -621,7 +621,7 @@ bool rm_voidelle(voidelle_t dir, char *filename, bool ignore_content, voidelle_t
         return false;
     }
 
-    if (child.content != 0 && !ignore_content)
+    if ((child.flags & VOIDELLE_DIRECTORY) && child.content != 0 && !ignore_content)
     {
         printf("Directory '%s' is not empty.\n", filename);
         return false;
@@ -652,6 +652,18 @@ bool rm_voidelle(voidelle_t dir, char *filename, bool ignore_content, voidelle_t
         invalidate_section(name_pos);
         debug("Invalidating name: %lu.\n", name_pos);
         name_pos = name.next;
+    }
+
+    uint64_t content_pos = child.content;
+    voidite_t content;
+    while (content_pos)
+    {
+        fseek(disk, content_pos, SEEK_SET);
+        fread(&content, sizeof(voidite_t), 1, disk);
+
+        invalidate_section(content_pos);
+        debug("Invalidating content: %lu.\n", content_pos);
+        content_pos = content.next;
     }
 
     invalidate_section(child.pos);
