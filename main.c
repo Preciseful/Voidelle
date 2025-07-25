@@ -19,7 +19,9 @@ char *usage = "Usage: voidelle DISK OPTION... PATH...\n"
               " tree    displays the entries in PATH in a tree format\n"
               " touch   creates the files in PATH\n"
               " mkdir   creates the directories in PATH\n"
-              "     -r  creates all directories recursively\n";
+              "     -r  creates all directories recursively\n"
+              " rm      removes the files/directories in PATH\n"
+              "     -r  removes all content inside the directory recursively";
 
 char *eat_arg(int *argc, char **argv[])
 {
