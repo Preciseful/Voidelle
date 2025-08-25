@@ -59,6 +59,9 @@ This is the basic entry for files and directories. It contains metadata such as 
     - `0x8`: deleted/invalid entry.
     - An OS can choose to use the remaining bits for its own flags.
 - `name` (8 bytes): contains the name's `voidite` position.
+    - Names should include the null terminator.
+- `name` (8 bytes): the total size of the current entry's name.
+    - This includes the null terminator.
 - `content` (8 bytes): contains the content's position.
     - the content presented can be a `voidite` or `voidelle`.
 - `content_size` (8 bytes): the total size of the current entry's content.
