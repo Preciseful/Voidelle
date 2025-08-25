@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-#define VOIDELLE_ROOT_CHARACTER '>'
+#define VOIDELLE_ROOT_CHARACTER '/'
 #define VOID_SIZE 512
 #define VOIDITE_CONTENT_SIZE (VOID_SIZE - sizeof(uint64_t) * 2)
 
@@ -35,6 +35,7 @@ typedef struct voidelle
     uint8_t velle[5];
     uint64_t flags;
     uint64_t name;
+    uint64_t name_size;
     uint64_t content;
     uint64_t content_size;
     uint64_t next;

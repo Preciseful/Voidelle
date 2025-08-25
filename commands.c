@@ -61,9 +61,9 @@ char *get_voidelle_name(voidelle_t voidelle)
         name_pos = name.next;
 
         if (name_pos == 0)
-            strcpy(velle_name + i * VOID_SIZE, name.data);
+            memcpy(velle_name + i * VOID_SIZE, name.data, voidelle.name_size - ((i - 1) * VOIDITE_CONTENT_SIZE));
         else
-            memcpy(velle_name + i * VOID_SIZE, name.data, VOID_SIZE - 2 * sizeof(unsigned long));
+            memcpy(velle_name + i * VOID_SIZE, name.data, VOIDITE_CONTENT_SIZE);
     }
 
     return velle_name;
@@ -203,6 +203,7 @@ bool create_voidelle(char *filename, uint64_t flags, voidelle_t *b_voidelle)
     uint8_t cdate[5] = {(uint8_t)tm->tm_mon, (uint8_t)tm->tm_mday, (uint8_t)tm->tm_hour, (uint8_t)tm->tm_min, (uint8_t)tm->tm_sec};
 
     voidelle.name = voidelle_name.pos;
+    voidelle.name_size = filename_len;
     voidelle.next = 0;
     voidelle.content = 0;
     voidelle.content_size = 0;
@@ -254,6 +255,7 @@ void init()
     voidelle_t root;
     root.flags = VOIDELLE_SYSTEM | VOIDELLE_DIRECTORY;
     root.name = root_name.pos;
+    root.name_size = 2;
     root.content = 0;
     root.content_size = 0;
     root.next = 0;
@@ -505,6 +507,9 @@ char *get_filename(char *path, voidelle_t *parent, bool create_parents)
         {
             for (unsigned long i = 0; i <= new_path_len; i++)
             {
+                if (VOIDELLE_ROOT_CHARACTER == '/' && i == 0)
+                    continue;
+
                 if (new_path[i] == '/' || new_path[i] == 0)
                 {
                     new_path[i] = 0;
