@@ -279,7 +279,7 @@ void init()
     unsigned char *zero_buf = calloc(voidmap_size, 1);
     zero_buf[0] = 0b11100000;
     fseek(disk, voidmap, SEEK_SET);
-    fwrite(zero_buf, 1, voidmap, disk);
+    fwrite(zero_buf, 1, voidmap_size, disk);
     free(zero_buf);
 }
 
