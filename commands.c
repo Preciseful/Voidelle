@@ -288,7 +288,7 @@ bool get_voidelle_from_path(char *path, voidelle_t *b_voidelle)
     debug("Getting voidelle from path: '%s'\n", path);
     if (*path != VOIDELLE_ROOT_CHARACTER)
     {
-        printf("Paths must be absolute when using ls.\n");
+        printf("Paths must be absolute.\n");
         return false;
     }
 
