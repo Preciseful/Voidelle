@@ -24,5 +24,6 @@ void init();
 void ls(char *path, enum Ls_Options flag);
 void make(char *path, uint64_t flags, bool recursive);
 void rm_file(char *path, bool recursive);
-void write(char *path, char *data);
+void write(char *path, char *data, unsigned long data_len);
 void cat(char *path);
+void ecopy(char *path, char *epath);

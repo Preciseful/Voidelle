@@ -20,7 +20,8 @@ char *usage = "Usage: voidelle DISK [OPTION]... PATH...\n"
               " mkdir   creates the directories in PATH\n"
               " rm      removes the entries in PATH\n"
               " wr      write to a file\n"
-              " cat     display PATH file's content\n";
+              " cat     display PATH file's content\n"
+              " ecp     copy external filesystem file into PATH";
 
 char *ls_usage = "Usage: ls [OPTION...] PATH...\n"
                  "List the entries in PATH.\n"
@@ -43,7 +44,11 @@ char *mkdir_usage = "Usage: mkdir [OPTION...] PATH...\n"
 char *wr_usage = "Usage: wr PATH DATA\n"
                  "Write DATA in the entry found in PATH.\n";
 
-char *eat_arg(int *argc, char **argv[])
+char *ecp_usage = "Usage: ecp PATH EPATH\n"
+                  "Copy data from the external path (EPATH) in PATH.\n";
+
+char *
+eat_arg(int *argc, char **argv[])
 {
     if (*argc == 0)
     {
@@ -176,13 +181,28 @@ void execute(int argc, char *argv[])
 
         char *path = eat_arg(&argc, &argv);
         char *data = eat_arg(&argc, &argv);
-        write(path, data);
+        write(path, data, 0);
     }
 
     else if (strcmp(option, "cat") == 0)
     {
         while (argc)
             cat(eat_arg(&argc, &argv));
+    }
+
+    else if (strcmp(option, "ecp") == 0)
+    {
+        if (argc == 0 ||
+            (argc != 0 && (strcmp(*argv, "-h") == 0 || strcmp(*argv, "--help") == 0)))
+        {
+            eat_arg(&argc, &argv);
+            puts(ecp_usage);
+            goto finish;
+        }
+
+        char *path = eat_arg(&argc, &argv);
+        char *epath = eat_arg(&argc, &argv);
+        ecopy(path, epath);
     }
 
     else
