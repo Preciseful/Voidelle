@@ -1,8 +1,9 @@
-#include <Filesystem/voidelle.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+
+#include "voidelle.h"
 
 // ALL disk_* functions should be swapped for your disk handling
 
@@ -110,6 +111,7 @@ bool read_void(Voidom voidom, void *buf, uint64_t position, uint64_t size)
     if (size > VOID_SIZE)
         return false;
 
+    disk_seek(voidom, position);
     disk_read(voidom, buf, size);
     return true;
 }
@@ -273,14 +275,13 @@ bool read_voidelle_at(Voidom voidom, Voidelle voidelle, Voidite *buf, unsigned l
     return true;
 }
 
-verror_t read_voidelle(Voidom voidom, Voidelle voidelle, unsigned long seek, void *buf, unsigned long *read_count)
+unsigned long read_voidelle(Voidom voidom, Voidelle voidelle, unsigned long seek, void *buf, unsigned long size)
 {
     if (voidelle.flags & VOIDELLE_DIRECTORY)
         return FILE_IS_DIRECTORY;
 
     uint8_t *current_buf = buf;
 
-    uint64_t size = voidelle.content_voidelle_size;
     uint64_t first_voidite = seek / VOIDITE_CONTENT_SIZE;
     uint64_t last_voidite = (seek + size - 1) / VOIDITE_CONTENT_SIZE;
     uint64_t start = seek % VOIDITE_CONTENT_SIZE;
@@ -317,6 +318,5 @@ verror_t read_voidelle(Voidom voidom, Voidelle voidelle, unsigned long seek, voi
         bytes_left -= cpy_len;
     }
 
-    *read_count = current_buf - (uint8_t *)buf;
-    return SUCCESS;
+    return current_buf - (uint8_t *)buf;
 }

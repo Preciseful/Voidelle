@@ -1,68 +1,63 @@
-#include <stdio.h>
-#include <argp.h>
+#include <stddef.h>
 #include <stdlib.h>
-#include <Cli/cli.h>
-#include <string.h>
+#include <errno.h>
 
-struct arguments
-{
-    disk_t disk;
-    char *command;
-    char **commands;
+#include "Filesystem/voidelle.h"
+#include "Cli/cli.h"
+
+struct cli_context cli_ctx = {
+    .disk = 0,
+    .init = false,
+    .uid = 0,
 };
 
-static int parse_arg(int key, char *arg, struct argp_state *state)
-{
-    struct arguments *arguments = state->input;
+static struct fuse_operations operations = {
+    .read = fuse_read,
+    .getattr = fuse_getattr,
+    .readdir = fuse_readdir,
+};
 
-    switch (key)
-    {
-    case 'd':
-        arguments->disk = fopen(arg, "r+");
-        break;
-
-    case ARGP_KEY_ARG:
-        if (!arguments->command)
-            arguments->command = arg;
-        else
-        {
-            arguments->commands = &state->argv[state->next - 1];
-            state->next = state->argc;
-        }
-        break;
-
-    case ARGP_KEY_END:
-        if (!arguments->disk)
-        {
-            argp_failure(state, 1, 0, "required -d (--disk). See --help for more information");
-            exit(ARGP_ERR_UNKNOWN);
-        }
-
-    default:
-        break;
-    }
-
-    return 0;
-}
+static const struct fuse_opt option_spec[] = {
+    {"--disk=%s", offsetof(struct cli_context, disk), 0},
+    {"--init", offsetof(struct cli_context, init), 1},
+    {"--user=%lu", offsetof(struct cli_context, uid), 0},
+    FUSE_OPT_END,
+};
 
 int main(int argc, char *argv[])
 {
-    struct arguments arguments;
-    arguments.disk = 0;
+    struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
+    fuse_opt_parse(&args, &cli_ctx, option_spec, NULL);
 
-    struct argp_option options[] =
-        {
-            {"disk", 'd', "DISK", 0, "Choose disk"},
-            {0},
-        };
+    if (!cli_ctx.disk)
+    {
+        printf("Expected disk argument.\n");
+        return 1;
+    }
 
-    struct argp argp = {options, parse_arg};
-    error_t error = argp_parse(&argp, argc, argv, 0, 0, &arguments);
-    if (error)
-        return error;
+    cli_ctx.voidom.disk = fopen(cli_ctx.disk, "r+");
+    printf("Disk: %s\n", cli_ctx.disk);
+    if (!cli_ctx.voidom.disk)
+    {
+        printf("Invalid disk.\n");
+        return 1;
+    }
 
-    if (strcmp(arguments.command, "init") == 0)
-        init_filesystem(arguments.disk);
+    if (cli_ctx.init)
+    {
+        printf("Initializing filesystem.\n");
+        if (!init_filesystem(&cli_ctx.voidom))
+            printf("Error encountered.\n");
 
-    return 0;
+        return 1;
+    }
+
+    else if (!validate_filesystem(&cli_ctx.voidom))
+    {
+        fclose(cli_ctx.voidom.disk);
+        printf("Invalid filesystem.\n");
+        return 1;
+    }
+
+    return fuse_main(argc - 2, argv, &operations, &cli_ctx);
 }

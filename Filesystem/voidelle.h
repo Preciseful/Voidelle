@@ -52,7 +52,7 @@ typedef struct __attribute__((packed)) Voidelle
     uint8_t creation_date[5];
     uint64_t modification_year;
     // Format: MONTH DAY HOUR MINUTE SECOND
-    uint64_t modification_date[5];
+    uint8_t modification_date[5];
     uint64_t owner_id;
     uint8_t other_permission;
     uint8_t owner_permission;
@@ -84,7 +84,8 @@ typedef struct __attribute__((packed)) Voidom
     Voidelle root;
 } Voidom;
 
+bool read_void(Voidom voidom, void *buf, uint64_t position, uint64_t size);
 verror_t create_voidlet(Voidom *voidom);
 verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Voidelle_Flags flags);
 verror_t get_voidelle_name(Voidom voidom, Voidelle voidelle, char *buf);
-verror_t read_voidelle(Voidom voidom, Voidelle voidelle, unsigned long seek, void *buf, unsigned long *read_count);
+unsigned long read_voidelle(Voidom voidom, Voidelle voidelle, unsigned long seek, void *buf, unsigned long size);

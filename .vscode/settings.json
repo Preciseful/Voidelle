@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "fuse.h": "c",
+        "cli.h": "c",
+        "voidelle.h": "c",
+        "stdbool.h": "c",
+        "stdlib.h": "c",
+        "memory_resource": "c"
+    }
+}
