@@ -53,7 +53,6 @@ bool find_voidelle_by_name(Voidom voidom, char *name, Voidelle parent, Voidelle 
 
         char *v_name = malloc(voidelle.name_voidelle_size);
         get_voidelle_name(voidom, voidelle, v_name);
-        fprintf(stderr, "Searching: %s\n", v_name);
 
         if (strcmp(v_name, name) == 0)
         {

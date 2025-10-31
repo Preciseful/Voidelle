@@ -15,7 +15,6 @@ int fuse_update_time(const char *path, const struct timespec *tv, struct fuse_fi
     struct cli_context *ctx = fuse_get_context()->private_data;
     Voidelle voidelle;
     read_path(ctx->voidom, path, &voidelle, 0);
-    fprintf(stderr, "UPDATE TIME TO: %s\n", path);
 
     time_t now = time(0);
 

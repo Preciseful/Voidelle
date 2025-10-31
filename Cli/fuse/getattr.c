@@ -16,9 +16,6 @@ int getattr(struct cli_context *cli_ctx, Voidelle voidelle, struct stat *st)
     st->st_ctime = voidelle.creation_seconds;
     st->st_size = voidelle.content_voidelle_size;
 
-    fprintf(stderr, "ctime: %ld -> %s\n", st->st_ctime, ctime(&st->st_ctime));
-    fprintf(stderr, "cmime: %ld -> %s\n", st->st_mtime, ctime(&st->st_ctime));
-
     char *name = malloc(voidelle.name_voidelle_size);
     get_voidelle_name(cli_ctx->voidom, voidelle, name);
 
