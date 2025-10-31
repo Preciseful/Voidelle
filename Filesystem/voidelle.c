@@ -31,7 +31,7 @@ long disk_size(Voidom voidom)
     return file_size;
 }
 
-uint64_t get_free_section(Voidom voidom)
+uint64_t get_free_void(Voidom voidom)
 {
     uint8_t total_bits[VOID_SIZE];
 
@@ -124,7 +124,7 @@ uint64_t populate_data(Voidom voidom, Voidite *voidite, const void *data, uint64
 
     for (uint64_t i = 0; i < void_count; i++)
     {
-        uint64_t pos = get_free_section(voidom);
+        uint64_t pos = get_free_void(voidom);
 
         Voidite voidite;
         voidite.position = pos;
@@ -193,13 +193,13 @@ verror_t create_voidlet(Voidom *voidom)
 
 verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Voidelle_Flags flags, uint8_t owner_perm, uint8_t other_perm)
 {
-    uint64_t voidelle_position = get_free_section(voidom);
+    uint64_t voidelle_position = get_free_void(voidom);
     time_t t = time(0);
 
     Voidelle voidelle;
     memcpy(voidelle.header, "VELLE", 5);
     voidelle.flags = flags;
-    voidelle.name_voidelle = get_free_section(voidom);
+    voidelle.name_voidelle = get_free_void(voidom);
     voidelle.name_voidelle_size = strlen(name) + 1;
     voidelle.content_voidelle = 0;
     voidelle.content_voidelle_size = 0;
@@ -250,7 +250,7 @@ verror_t get_voidelle_name(Voidom voidom, Voidelle voidelle, char *buf)
     return SUCCESS;
 }
 
-bool read_voidelle_at(Voidom voidom, Voidelle voidelle, Voidite *buf, unsigned long index)
+bool get_voidite_at(Voidom voidom, Voidelle voidelle, Voidite *buf, unsigned long index)
 {
     uint64_t content_pos = voidelle.content_voidelle;
 
@@ -290,7 +290,7 @@ unsigned long read_voidelle(Voidom voidom, Voidelle voidelle, unsigned long seek
     {
         Voidite voidite;
 
-        if (!read_voidelle_at(voidom, voidelle, &voidite, voidite_index))
+        if (!get_voidite_at(voidom, voidelle, &voidite, voidite_index))
             return current_buf - (uint8_t *)buf;
 
         uint8_t *cpy_start = voidite.data;

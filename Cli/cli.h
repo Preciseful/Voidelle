@@ -41,3 +41,4 @@ int fuse_touch(const char *path, mode_t mode, dev_t dev);
 int fuse_create(const char *path, mode_t mode, struct fuse_file_info *fi);
 int fuse_update_time(const char *path, const struct timespec *tv, struct fuse_file_info *fi);
 int fuse_mkdir(const char *path, mode_t mode);
+int fuse_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
