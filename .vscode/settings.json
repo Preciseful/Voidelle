@@ -5,6 +5,11 @@
         "voidelle.h": "c",
         "stdbool.h": "c",
         "stdlib.h": "c",
-        "memory_resource": "c"
+        "memory_resource": "c",
+        "errno.h": "c",
+        "string.h": "c",
+        "stat.h": "c",
+        "time.h": "c",
+        "utime.h": "c"
     }
 }

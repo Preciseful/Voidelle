@@ -191,12 +191,10 @@ verror_t create_voidlet(Voidom *voidom)
     return SUCCESS;
 }
 
-verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Voidelle_Flags flags)
+verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Voidelle_Flags flags, uint8_t owner_perm, uint8_t other_perm)
 {
     uint64_t voidelle_position = get_free_section(voidom);
     time_t t = time(0);
-    struct tm *tm = localtime(&t);
-    uint8_t date[5] = {(uint8_t)tm->tm_mon, (uint8_t)tm->tm_mday, (uint8_t)tm->tm_hour, (uint8_t)tm->tm_min, (uint8_t)tm->tm_sec};
 
     Voidelle voidelle;
     memcpy(voidelle.header, "VELLE", 5);
@@ -207,13 +205,12 @@ verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Vo
     voidelle.content_voidelle_size = 0;
     voidelle.next_voidelle = 0;
     voidelle.position = voidelle_position;
-    voidelle.creation_year = tm->tm_year + 1990;
-    memcpy(voidelle.creation_date, date, 5);
-    voidelle.modification_year = tm->tm_year + 1990;
-    memcpy(voidelle.modification_date, date, 5);
+    voidelle.creation_seconds = t;
+    voidelle.modification_seconds = t;
+    voidelle.access_seconds = t;
     voidelle.owner_id = 0;
-    voidelle.other_permission = 0;
-    voidelle.owner_permission = 0;
+    voidelle.other_permission = other_perm;
+    voidelle.owner_permission = owner_perm;
 
     if (!write_void(voidom, &voidelle, voidelle.position, sizeof(Voidelle)))
         return UNKNOWN_ERROR;

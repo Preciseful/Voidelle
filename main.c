@@ -8,13 +8,16 @@
 struct cli_context cli_ctx = {
     .disk = 0,
     .init = false,
-    .uid = 0,
+    .uid = -1,
 };
 
 static struct fuse_operations operations = {
     .read = fuse_read,
     .getattr = fuse_getattr,
     .readdir = fuse_readdir,
+    .mknod = fuse_touch,
+    .create = fuse_create,
+    .utimens = fuse_update_time,
 };
 
 static const struct fuse_opt option_spec[] = {
@@ -26,8 +29,13 @@ static const struct fuse_opt option_spec[] = {
 
 int main(int argc, char *argv[])
 {
+    // disk's always there
+    int custom_arg_count = 1;
     struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
     fuse_opt_parse(&args, &cli_ctx, option_spec, NULL);
+
+    if (cli_ctx.uid)
+        custom_arg_count++;
 
     if (!cli_ctx.disk)
     {
@@ -59,5 +67,5 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    return fuse_main(argc - 2, argv, &operations, &cli_ctx);
+    return fuse_main(argc - custom_arg_count, argv, &operations, &cli_ctx);
 }
