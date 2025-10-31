@@ -4,7 +4,7 @@
 
 #include "../cli.h"
 
-int fuse_touch(const char *path, mode_t mode, dev_t dev)
+int create_fuse_voidelle(const char *path, mode_t mode, enum Voidelle_Flags flags)
 {
     struct fuse_context *fuse_ctx = fuse_get_context();
     struct cli_context *cli_ctx = fuse_ctx->private_data;
@@ -44,7 +44,7 @@ int fuse_touch(const char *path, mode_t mode, dev_t dev)
     uint8_t owner_bits = OWNER_BITS(mode);
     uint8_t other_bits = OTHER_BITS(mode);
 
-    create_voidelle(cli_ctx->voidom, &voidelle, name, 0, owner_bits, other_bits);
+    create_voidelle(cli_ctx->voidom, &voidelle, name, flags, owner_bits, other_bits);
 
     if (!parent.content_voidelle)
     {
@@ -69,4 +69,9 @@ int fuse_touch(const char *path, mode_t mode, dev_t dev)
     }
 
     return 0;
+}
+
+int fuse_touch(const char *path, mode_t mode, dev_t dev)
+{
+    return create_fuse_voidelle(path, mode, 0);
 }

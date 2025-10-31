@@ -18,6 +18,7 @@ static struct fuse_operations operations = {
     .mknod = fuse_touch,
     .create = fuse_create,
     .utimens = fuse_update_time,
+    .mkdir = fuse_mkdir,
 };
 
 static const struct fuse_opt option_spec[] = {
