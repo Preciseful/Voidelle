@@ -16,9 +16,6 @@ int getattr(struct cli_context *cli_ctx, Voidelle voidelle, struct stat *st)
     st->st_ctime = voidelle.creation_seconds;
     st->st_size = voidelle.content_voidelle_size;
 
-    char *name = malloc(voidelle.name_voidelle_size);
-    get_voidelle_name(cli_ctx->voidom, voidelle, name);
-
     mode_t mode = PERM(voidelle.owner_permission, voidelle.other_permission);
 
     if (voidelle.flags & VOIDELLE_DIRECTORY)
@@ -32,7 +29,6 @@ int getattr(struct cli_context *cli_ctx, Voidelle voidelle, struct stat *st)
         st->st_nlink = 1;
     }
 
-    free(name);
     return 0;
 }
 

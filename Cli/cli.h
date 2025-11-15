@@ -32,7 +32,7 @@ bool init_filesystem(Voidom *voidom);
 bool validate_filesystem(Voidom *voidom);
 bool read_path(Voidom voidom, const char *path, Voidelle *voidelle, size_t offset);
 int getattr(struct cli_context *cli_ctx, Voidelle voidelle, struct stat *st);
-int create_fuse_voidelle(const char *path, mode_t mode, enum Voidelle_Flags flags);
+int create_fuse_voidelle(const char *path, mode_t mode, enum Voidelle_Flags flags, Voidelle *buf);
 
 int fuse_getattr(const char *path, struct stat *st, struct fuse_file_info *fi);
 int fuse_read(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
@@ -42,3 +42,5 @@ int fuse_create(const char *path, mode_t mode, struct fuse_file_info *fi);
 int fuse_update_time(const char *path, const struct timespec *tv, struct fuse_file_info *fi);
 int fuse_mkdir(const char *path, mode_t mode);
 int fuse_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+int fuse_rename(const char *source_path, const char *destination_path, unsigned int flags);
+int fuse_remove(const char *path);

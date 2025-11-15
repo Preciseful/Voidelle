@@ -116,6 +116,160 @@ bool read_void(Voidom voidom, void *buf, uint64_t position, uint64_t size)
     return true;
 }
 
+void clear_voidites_after(Voidom voidom, Voidite *start)
+{
+    uint64_t pos = start->next_voidite;
+
+    while (pos)
+    {
+        Voidite voidite;
+        read_void(voidom, &voidite, pos, sizeof(Voidite));
+        pos = voidite.next_voidite;
+
+        voidite.next_voidite = 0;
+        write_void(voidom, &voidite, voidite.position, sizeof(Voidite));
+        invalidate_section(voidom, voidite.position);
+    }
+
+    start->next_voidite = 0;
+    write_void(voidom, start, start->position, sizeof(Voidite));
+}
+
+void clear_voidelle_content(Voidom voidom, Voidelle *voidelle)
+{
+    if (voidelle->content_voidelle == 0)
+        return;
+
+    if (voidelle->flags & VOIDELLE_DIRECTORY)
+    {
+        uint64_t pos = voidelle->content_voidelle;
+
+        while (pos)
+        {
+            Voidelle child;
+            read_void(voidom, &child, pos, sizeof(Voidelle));
+
+            remove_voidelle(voidom, voidelle, child, 0x3);
+
+            pos = child.next_voidelle;
+        }
+    }
+    else
+    {
+        Voidite voidite;
+        read_void(voidom, &voidite, voidelle->content_voidelle, sizeof(Voidite));
+
+        clear_voidites_after(voidom, &voidite);
+        invalidate_section(voidom, voidite.position);
+    }
+
+    voidelle->content_voidelle = 0;
+    write_void(voidom, voidelle, voidelle->position, sizeof(Voidelle));
+}
+
+void clear_voidelle_name(Voidom voidom, Voidelle *voidelle)
+{
+    if (voidelle->name_voidelle == 0)
+        return;
+
+    Voidite voidite;
+    read_void(voidom, &voidite, voidelle->name_voidelle, sizeof(Voidite));
+
+    clear_voidites_after(voidom, &voidite);
+    invalidate_section(voidom, voidite.position);
+
+    voidelle->name_voidelle = 0;
+    write_void(voidom, voidelle, voidelle->position, sizeof(Voidelle));
+}
+
+void fill_content_voidites(Voidom voidom, Voidelle *voidelle, unsigned long count)
+{
+    if (!voidelle->content_voidelle)
+    {
+        Voidite content;
+        content.position = get_free_void(voidom);
+        content.next_voidite = 0;
+        memset(content.data, 0, VOIDITE_CONTENT_SIZE);
+
+        voidelle->content_voidelle = content.position;
+
+        write_void(voidom, voidelle, voidelle->position, sizeof(Voidelle));
+        write_void(voidom, &content, content.position, sizeof(Voidite));
+    }
+
+    Voidite last_voidite;
+    uint64_t pos = voidelle->content_voidelle;
+
+    unsigned long existing = 0;
+
+    while (pos)
+    {
+        read_void(voidom, &last_voidite, pos, sizeof(Voidite));
+        pos = last_voidite.next_voidite;
+        existing++;
+    }
+
+    if (count <= existing)
+        return;
+    count -= existing;
+
+    for (size_t i = 0; i < count; i++)
+    {
+        Voidite next_voidite;
+        next_voidite.next_voidite = 0;
+        next_voidite.position = get_free_void(voidom);
+        memset(next_voidite.data, 0, VOIDITE_CONTENT_SIZE);
+
+        last_voidite.next_voidite = next_voidite.position;
+
+        write_void(voidom, &last_voidite, last_voidite.position, sizeof(Voidite));
+        write_void(voidom, &next_voidite, next_voidite.position, sizeof(Voidite));
+
+        last_voidite = next_voidite;
+    }
+}
+
+void fill_name_voidites(Voidom voidom, Voidelle *voidelle, unsigned long count)
+{
+    if (!voidelle->name_voidelle)
+    {
+        Voidite name;
+        name.position = get_free_void(voidom);
+        name.next_voidite = 0;
+        memset(name.data, 0, VOIDITE_CONTENT_SIZE);
+
+        voidelle->name_voidelle = name.position;
+
+        write_void(voidom, voidelle, voidelle->position, sizeof(Voidelle));
+        write_void(voidom, &name, name.position, sizeof(Voidite));
+    }
+
+    Voidite last_voidite;
+    uint64_t pos = voidelle->name_voidelle;
+
+    while (pos)
+    {
+        read_void(voidom, &last_voidite, pos, sizeof(Voidite));
+        pos = last_voidite.next_voidite;
+        count--;
+    }
+
+    for (size_t i = 0; i < count; i++)
+    {
+        Voidite next_voidite;
+        next_voidite.next_voidite = 0;
+        next_voidite.position = get_free_void(voidom);
+        memset(next_voidite.data, 0, VOIDITE_CONTENT_SIZE);
+
+        last_voidite.next_voidite = next_voidite.position;
+
+        write_void(voidom, &last_voidite, last_voidite.position, sizeof(Voidite));
+        write_void(voidom, &next_voidite, next_voidite.position, sizeof(Voidite));
+
+        last_voidite = next_voidite;
+    }
+}
+
 uint64_t populate_data(Voidom voidom, Voidite *voidite, const void *data, uint64_t size)
 {
     uint64_t initial_size = size;
@@ -229,28 +383,33 @@ verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Vo
 
 verror_t get_voidelle_name(Voidom voidom, Voidelle voidelle, char *buf)
 {
+    fprintf(stderr, "-\n");
     uint64_t read_bytes = 0;
     uint64_t size = voidelle.name_voidelle_size;
     uint64_t pos = voidelle.name_voidelle;
 
     while (pos)
     {
+        fprintf(stderr, ";\n");
         uint64_t aligned_size = size > VOIDITE_CONTENT_SIZE ? VOIDITE_CONTENT_SIZE : size;
 
         Voidite voidite;
         read_void(voidom, &voidite, pos, sizeof(Voidite));
+        fprintf(stderr, "@\n");
         memcpy(buf + read_bytes, voidite.data, aligned_size);
+        fprintf(stderr, "%%\n");
 
         size -= aligned_size;
         read_bytes += aligned_size;
 
+        fprintf(stderr, "*\n");
         pos = voidite.next_voidite;
     }
 
     return SUCCESS;
 }
 
-bool get_voidite_at(Voidom voidom, Voidelle voidelle, Voidite *buf, unsigned long index)
+bool get_content_voidite_at(Voidom voidom, Voidelle voidelle, Voidite *buf, unsigned long index)
 {
     uint64_t content_pos = voidelle.content_voidelle;
 
@@ -272,6 +431,28 @@ bool get_voidite_at(Voidom voidom, Voidelle voidelle, Voidite *buf, unsigned lon
     return true;
 }
 
+bool get_name_voidite_at(Voidom voidom, Voidelle voidelle, Voidite *buf, unsigned long index)
+{
+    uint64_t name_pos = voidelle.name_voidelle;
+
+    for (unsigned long i = 0; i < index; i++)
+    {
+        if (name_pos == 0)
+            return false;
+
+        Voidite current_voidite;
+        read_void(voidom, &current_voidite, name_pos, sizeof(Voidite));
+
+        name_pos = current_voidite.next_voidite;
+    }
+
+    if (name_pos == 0)
+        return false;
+
+    read_void(voidom, buf, name_pos, sizeof(Voidite));
+    return true;
+}
+
 unsigned long read_voidelle(Voidom voidom, Voidelle voidelle, unsigned long seek, void *buf, unsigned long size)
 {
     if (voidelle.flags & VOIDELLE_DIRECTORY)
@@ -290,7 +471,7 @@ unsigned long read_voidelle(Voidom voidom, Voidelle voidelle, unsigned long seek
     {
         Voidite voidite;
 
-        if (!get_voidite_at(voidom, voidelle, &voidite, voidite_index))
+        if (!get_content_voidite_at(voidom, voidelle, &voidite, voidite_index))
             return current_buf - (uint8_t *)buf;
 
         uint8_t *cpy_start = voidite.data;
@@ -316,4 +497,166 @@ unsigned long read_voidelle(Voidom voidom, Voidelle voidelle, unsigned long seek
     }
 
     return current_buf - (uint8_t *)buf;
+}
+
+uint64_t get_previous_link_position(Voidom voidom, Voidelle parent, Voidelle voidelle, Voidelle *buf)
+{
+    Voidelle neighbour;
+    uint64_t pos = parent.content_voidelle;
+
+    if (pos == voidelle.position)
+        return pos;
+
+    while (pos)
+    {
+        Voidelle neighbour;
+        read_void(voidom, &neighbour, pos, sizeof(neighbour));
+
+        if (neighbour.next_voidelle == voidelle.position)
+            break;
+
+        pos = neighbour.next_voidelle;
+    }
+
+    if (neighbour.next_voidelle != voidelle.position)
+        return 0;
+
+    return neighbour.position;
+}
+
+void swap_voidelles(Voidom voidom, Voidelle *first, Voidelle *second, int swaps)
+{
+    uint64_t t;
+    t = first->position;
+    first->position = second->position;
+    second->position = t;
+
+    t = first->next_voidelle;
+    first->next_voidelle = second->next_voidelle;
+    second->next_voidelle = t;
+
+    // switch name
+    if (swaps & 0x1)
+    {
+        t = first->name_voidelle;
+        first->name_voidelle = second->name_voidelle;
+        second->name_voidelle = t;
+
+        t = first->name_voidelle_size;
+        first->name_voidelle_size = second->name_voidelle_size;
+        second->name_voidelle_size = t;
+    }
+
+    // switch content
+    if (swaps & 0x2)
+    {
+        t = first->content_voidelle;
+        first->content_voidelle = second->content_voidelle;
+        second->content_voidelle = t;
+
+        t = first->content_voidelle_size;
+        first->content_voidelle_size = second->content_voidelle_size;
+        second->content_voidelle_size = t;
+    }
+
+    write_void(voidom, first, first->position, sizeof(Voidelle));
+    write_void(voidom, second, second->position, sizeof(Voidelle));
+}
+
+bool remove_voidelle(Voidom voidom, Voidelle *parent, Voidelle voidelle, int clears)
+{
+    if (parent->content_voidelle == voidelle.position)
+    {
+        if (clears & 0x1)
+            clear_voidelle_content(voidom, &voidelle);
+        if (clears & 0x2)
+            clear_voidelle_name(voidom, &voidelle);
+
+        parent->content_voidelle = voidelle.next_voidelle;
+
+        write_void(voidom, parent, parent->position, sizeof(Voidelle));
+        invalidate_section(voidom, voidelle.position);
+
+        return true;
+    }
+    else
+    {
+        Voidelle neighbour;
+        uint64_t pos = parent->content_voidelle;
+
+        while (pos)
+        {
+            read_void(voidom, &neighbour, pos, sizeof(neighbour));
+
+            if (neighbour.next_voidelle == voidelle.position)
+                break;
+
+            pos = neighbour.next_voidelle;
+        }
+
+        if (neighbour.next_voidelle != voidelle.position)
+            return false;
+
+        if (clears & 0x1)
+            clear_voidelle_content(voidom, &voidelle);
+        if (clears & 0x2)
+            clear_voidelle_name(voidom, &voidelle);
+
+        neighbour.next_voidelle = voidelle.next_voidelle;
+        write_void(voidom, &neighbour, neighbour.position, sizeof(neighbour));
+        invalidate_section(voidom, voidelle.position);
+
+        return true;
+    }
+
+    return false;
+}
+
+void add_voidelle(Voidom voidom, Voidelle *parent, Voidelle voidelle)
+{
+    if (!parent->content_voidelle)
+    {
+        parent->content_voidelle = voidelle.position;
+        write_void(voidom, parent, parent->position, sizeof(Voidelle));
+    }
+    else
+    {
+        Voidelle neighbour;
+        unsigned long pos = parent->content_voidelle;
+
+        while (pos)
+        {
+            read_void(voidom, &neighbour, pos, sizeof(Voidelle));
+            pos = neighbour.next_voidelle;
+        }
+
+        neighbour.next_voidelle = voidelle.position;
+        write_void(voidom, &neighbour, neighbour.position, sizeof(Voidelle));
+    }
+}
+
+void add_voidelle_with_check(Voidom voidom, Voidelle *parent, Voidelle voidelle)
+{
+    if (!parent->content_voidelle)
+    {
+        parent->content_voidelle = voidelle.position;
+        write_void(voidom, parent, parent->position, sizeof(Voidelle));
+    }
+    else
+    {
+        Voidelle neighbour;
+        unsigned long pos = parent->content_voidelle;
+
+        while (pos)
+        {
+            if (pos == voidelle.position)
+                return;
+
+            read_void(voidom, &neighbour, pos, sizeof(Voidelle));
+            pos = neighbour.next_voidelle;
+        }
+
+        neighbour.next_voidelle = voidelle.position;
+        write_void(voidom, &neighbour, neighbour.position, sizeof(Voidelle));
+    }
 }

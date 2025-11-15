@@ -4,7 +4,7 @@
 
 #include "../cli.h"
 
-int create_fuse_voidelle(const char *path, mode_t mode, enum Voidelle_Flags flags)
+int create_fuse_voidelle(const char *path, mode_t mode, enum Voidelle_Flags flags, Voidelle *buf)
 {
     struct fuse_context *fuse_ctx = fuse_get_context();
     struct cli_context *cli_ctx = fuse_ctx->private_data;
@@ -17,17 +17,17 @@ int create_fuse_voidelle(const char *path, mode_t mode, enum Voidelle_Flags flag
     if (read_path(cli_ctx->voidom, path, &voidelle, 0))
         return -EEXIST;
 
-    unsigned long path_len = strlen(path);
+    int path_len = strlen(path);
     unsigned long name_index = 0;
 
-    for (unsigned long i = path_len - 1; i >= 0; i--)
+    for (int i = path_len - 1; i >= 0; i--)
     {
         if (path[i] != '/')
             break;
         path_len--;
     }
 
-    for (unsigned long i = path_len - 1; i >= 0; i--)
+    for (int i = path_len - 1; i >= 0; i--)
     {
         if (path[i] != '/')
             continue;
@@ -45,33 +45,14 @@ int create_fuse_voidelle(const char *path, mode_t mode, enum Voidelle_Flags flag
     uint8_t other_bits = OTHER_BITS(mode);
 
     create_voidelle(cli_ctx->voidom, &voidelle, name, flags, owner_bits, other_bits);
+    add_voidelle(cli_ctx->voidom, &parent, voidelle);
 
-    if (!parent.content_voidelle)
-    {
-        parent.content_voidelle = voidelle.position;
-        write_void(cli_ctx->voidom, &parent, parent.position, sizeof(parent));
-    }
-    else
-    {
-        Voidelle neighbour;
-        unsigned long pos = parent.content_voidelle;
-
-        while (pos)
-        {
-            Voidelle neighbour;
-            read_void(cli_ctx->voidom, &neighbour, pos, sizeof(neighbour));
-
-            pos = neighbour.next_voidelle;
-        }
-
-        neighbour.next_voidelle = voidelle.position;
-        write_void(cli_ctx->voidom, &neighbour, neighbour.position, sizeof(neighbour));
-    }
-
+    if (buf != 0)
+        memcpy(buf, &voidelle, sizeof(Voidelle));
     return 0;
 }
 
 int fuse_touch(const char *path, mode_t mode, dev_t dev)
 {
-    return create_fuse_voidelle(path, mode, 0);
+    return create_fuse_voidelle(path, mode, 0, 0);
 }

@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <string.h>
+#include <errno.h>
 
 #include "../cli.h"
 
@@ -8,7 +9,8 @@ int fuse_write(const char *path, const char *buf, size_t size, off_t offset, str
     Voidelle voidelle;
 
     struct cli_context *ctx = fuse_get_context()->private_data;
-    read_path(ctx->voidom, path, &voidelle, 0);
+    if (!read_path(ctx->voidom, path, &voidelle, 0))
+        return -ENOENT;
 
     if (!voidelle.content_voidelle)
     {
@@ -66,7 +68,7 @@ int fuse_write(const char *path, const char *buf, size_t size, off_t offset, str
     while (size)
     {
         Voidite voidite;
-        get_voidite_at(ctx->voidom, voidelle, &voidite, voidite_pos);
+        get_content_voidite_at(ctx->voidom, voidelle, &voidite, voidite_pos);
 
         unsigned long bytes_count;
 
