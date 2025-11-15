@@ -13,7 +13,6 @@ int GetAttributes(struct cli_context *cli_ctx, Voidelle voidelle, struct stat *s
     st->st_gid = cli_ctx->gid ? cli_ctx->gid : getgid();
     st->st_atime = voidelle.access_seconds;
     st->st_mtime = voidelle.modification_seconds;
-    st->st_ctime = voidelle.creation_seconds;
     st->st_size = voidelle.content_voidelle_size;
 
     mode_t mode = PERM(voidelle.owner_permission, voidelle.other_permission);
@@ -37,7 +36,6 @@ int FuseGetAttributes(const char *path, struct stat *st, struct fuse_file_info *
     struct cli_context *cli_ctx = fuse_get_context()->private_data;
 
     Voidelle voidelle;
-
     if (!FindVoidelleByPath(cli_ctx->voidom, path, &voidelle))
         return -ENOENT;
 

@@ -36,8 +36,11 @@ Voidom GetVoidom();
 bool FindParentVoidelleByPath(Voidom voidom, const char *path, Voidelle *buf);
 bool FindVoidelleByPath(Voidom voidom, const char *path, Voidelle *buf);
 
-int FuseReadDirectory(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags);
 int GetAttributes(struct cli_context *cli_ctx, Voidelle voidelle, struct stat *st);
+
+int FuseReadDirectory(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags);
 int FuseGetAttributes(const char *path, struct stat *st, struct fuse_file_info *fi);
 int FuseReadFile(const char *path, char *buffer, size_t size, off_t offset, struct fuse_file_info *fi);
 int FuseCreateFile(const char *path, mode_t mode, struct fuse_file_info *fi);
+int FuseCreateDirectory(const char *path, mode_t mode);
+int FuseUpdateTime(const char *path, const struct timespec *tv, struct fuse_file_info *fi);

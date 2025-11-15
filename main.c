@@ -17,6 +17,8 @@ static struct fuse_operations operations = {
     .readdir = FuseReadDirectory,
     .read = FuseReadFile,
     .create = FuseCreateFile,
+    .mkdir = FuseCreateDirectory,
+    .utimens = FuseUpdateTime,
 };
 
 static const struct fuse_opt option_spec[] = {
