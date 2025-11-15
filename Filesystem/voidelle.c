@@ -383,26 +383,21 @@ verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Vo
 
 verror_t get_voidelle_name(Voidom voidom, Voidelle voidelle, char *buf)
 {
-    fprintf(stderr, "-\n");
     uint64_t read_bytes = 0;
     uint64_t size = voidelle.name_voidelle_size;
     uint64_t pos = voidelle.name_voidelle;
 
     while (pos)
     {
-        fprintf(stderr, ";\n");
         uint64_t aligned_size = size > VOIDITE_CONTENT_SIZE ? VOIDITE_CONTENT_SIZE : size;
 
         Voidite voidite;
         read_void(voidom, &voidite, pos, sizeof(Voidite));
-        fprintf(stderr, "@\n");
         memcpy(buf + read_bytes, voidite.data, aligned_size);
-        fprintf(stderr, "%%\n");
 
         size -= aligned_size;
         read_bytes += aligned_size;
 
-        fprintf(stderr, "*\n");
         pos = voidite.next_voidite;
     }
 
