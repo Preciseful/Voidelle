@@ -8,27 +8,22 @@
 struct cli_context cli_ctx = {
     .disk = 0,
     .init = false,
-    .uid = -1,
+    .uid = 0,
+    .gid = 0,
 };
 
 static struct fuse_operations operations = {
-    .read = fuse_read,
-    .getattr = fuse_getattr,
-    .readdir = fuse_readdir,
-    .mknod = fuse_touch,
-    .create = fuse_create,
-    .utimens = fuse_update_time,
-    .mkdir = fuse_mkdir,
-    .write = fuse_write,
-    .rename = fuse_rename,
-    .unlink = fuse_remove,
-    .rmdir = fuse_remove,
+    .getattr = FuseGetAttributes,
+    .readdir = FuseReadDirectory,
+    .read = FuseReadFile,
+    .create = FuseCreateFile,
 };
 
 static const struct fuse_opt option_spec[] = {
     {"--disk=%s", offsetof(struct cli_context, disk), 0},
     {"--init", offsetof(struct cli_context, init), 1},
     {"--user=%lu", offsetof(struct cli_context, uid), 0},
+    {"--gid=%lu", offsetof(struct cli_context, gid), 0},
     FUSE_OPT_END,
 };
 
@@ -41,6 +36,11 @@ int main(int argc, char *argv[])
 
     if (cli_ctx.uid)
         custom_arg_count++;
+
+    if (cli_ctx.gid)
+        custom_arg_count++;
+    else
+        cli_ctx.gid = cli_ctx.uid;
 
     if (!cli_ctx.disk)
     {
@@ -59,13 +59,13 @@ int main(int argc, char *argv[])
     if (cli_ctx.init)
     {
         printf("Initializing filesystem.\n");
-        if (!init_filesystem(&cli_ctx.voidom))
+        if (!InitFilesystem(&cli_ctx.voidom, cli_ctx))
             printf("Error encountered.\n");
 
         return 1;
     }
 
-    else if (!validate_filesystem(&cli_ctx.voidom))
+    else if (!ValidateFilesystem(&cli_ctx.voidom))
     {
         fclose(cli_ctx.voidom.disk);
         printf("Invalid filesystem.\n");

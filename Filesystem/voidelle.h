@@ -83,6 +83,7 @@ typedef struct __attribute__((packed)) Voidom
 
 bool write_void(Voidom voidom, void *buf, uint64_t position, uint64_t size);
 bool read_void(Voidom voidom, void *buf, uint64_t position, uint64_t size);
+uint64_t populate_voidite_data(Voidom voidom, Voidite *first_voidite_buf, const void *data, uint64_t size);
 void clear_voidites_after(Voidom voidom, Voidite *start);
 void clear_voidelle_content(Voidom voidom, Voidelle *voidelle);
 void clear_voidelle_name(Voidom voidom, Voidelle *voidelle);
@@ -90,7 +91,7 @@ void fill_content_voidites(Voidom voidom, Voidelle *voidelle, unsigned long coun
 void fill_name_voidites(Voidom voidom, Voidelle *voidelle, unsigned long count);
 uint64_t get_free_void(Voidom voidom);
 verror_t create_voidlet(Voidom *voidom);
-verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Voidelle_Flags flags, uint8_t owner_perm, uint8_t other_perm);
+verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Voidelle_Flags flags, uint64_t owner_id, uint8_t owner_perm, uint8_t other_perm);
 verror_t get_voidelle_name(Voidom voidom, Voidelle voidelle, char *buf);
 bool get_content_voidite_at(Voidom voidom, Voidelle voidelle, Voidite *buf, unsigned long index);
 bool get_name_voidite_at(Voidom voidom, Voidelle voidelle, Voidite *buf, unsigned long index);

@@ -4,13 +4,13 @@
 
 #include "../cli.h"
 
-int getattr(struct cli_context *cli_ctx, Voidelle voidelle, struct stat *st)
+int GetAttributes(struct cli_context *cli_ctx, Voidelle voidelle, struct stat *st)
 {
-    if (cli_ctx->uid)
-        fprintf(stderr, "UID specified: %lu\n", cli_ctx->uid);
+    if (cli_ctx->gid)
+        fprintf(stderr, "GID specified: %lu\n", cli_ctx->gid);
 
-    st->st_uid = cli_ctx->uid ? cli_ctx->uid : voidelle.owner_id;
-    st->st_gid = getgid();
+    st->st_uid = voidelle.owner_id;
+    st->st_gid = cli_ctx->gid ? cli_ctx->gid : getgid();
     st->st_atime = voidelle.access_seconds;
     st->st_mtime = voidelle.modification_seconds;
     st->st_ctime = voidelle.creation_seconds;
@@ -32,14 +32,14 @@ int getattr(struct cli_context *cli_ctx, Voidelle voidelle, struct stat *st)
     return 0;
 }
 
-int fuse_getattr(const char *path, struct stat *st, struct fuse_file_info *fi)
+int FuseGetAttributes(const char *path, struct stat *st, struct fuse_file_info *fi)
 {
-    struct fuse_context *ctx = fuse_get_context();
-    struct cli_context *cli_ctx = ctx->private_data;
+    struct cli_context *cli_ctx = fuse_get_context()->private_data;
+
     Voidelle voidelle;
 
-    if (!read_path(cli_ctx->voidom, path, &voidelle, 0))
+    if (!FindVoidelleByPath(cli_ctx->voidom, path, &voidelle))
         return -ENOENT;
 
-    return getattr(cli_ctx, voidelle, st);
+    return GetAttributes(cli_ctx, voidelle, st);
 }

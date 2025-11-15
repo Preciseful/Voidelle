@@ -270,10 +270,10 @@ void fill_name_voidites(Voidom voidom, Voidelle *voidelle, unsigned long count)
     }
 }
 
-uint64_t populate_data(Voidom voidom, Voidite *voidite, const void *data, uint64_t size)
+uint64_t populate_voidite_data(Voidom voidom, Voidite *first_voidite_buf, const void *data, uint64_t size)
 {
     uint64_t initial_size = size;
-    uint64_t void_count = ((size + VOIDITE_CONTENT_SIZE - 1) / VOIDITE_CONTENT_SIZE) + 1;
+    uint64_t void_count = ((size + VOIDITE_CONTENT_SIZE - 1) / VOIDITE_CONTENT_SIZE);
     Voidite *sections = malloc(sizeof(Voidite) * void_count);
 
     for (uint64_t i = 0; i < void_count; i++)
@@ -307,7 +307,7 @@ uint64_t populate_data(Voidom voidom, Voidite *voidite, const void *data, uint64
         write_void(voidom, &sections[i], sections[i].position, sizeof(Voidite));
     }
 
-    *voidite = sections[0];
+    *first_voidite_buf = sections[0];
     free(sections);
     return initial_size - size;
 }
@@ -345,7 +345,7 @@ verror_t create_voidlet(Voidom *voidom)
     return SUCCESS;
 }
 
-verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Voidelle_Flags flags, uint8_t owner_perm, uint8_t other_perm)
+verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Voidelle_Flags flags, uint64_t owner_id, uint8_t owner_perm, uint8_t other_perm)
 {
     uint64_t voidelle_position = get_free_void(voidom);
     time_t t = time(0);
@@ -353,7 +353,6 @@ verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Vo
     Voidelle voidelle;
     memcpy(voidelle.header, "VELLE", 5);
     voidelle.flags = flags;
-    voidelle.name_voidelle = get_free_void(voidom);
     voidelle.name_voidelle_size = strlen(name) + 1;
     voidelle.content_voidelle = 0;
     voidelle.content_voidelle_size = 0;
@@ -362,19 +361,16 @@ verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Vo
     voidelle.creation_seconds = t;
     voidelle.modification_seconds = t;
     voidelle.access_seconds = t;
-    voidelle.owner_id = 0;
+    voidelle.owner_id = owner_id;
     voidelle.other_permission = other_perm;
     voidelle.owner_permission = owner_perm;
 
-    if (!write_void(voidom, &voidelle, voidelle.position, sizeof(Voidelle)))
-        return UNKNOWN_ERROR;
-
     Voidite name_voidite;
-    name_voidite.position = voidelle.name_voidelle;
-    name_voidite.next_voidite = 0;
-    memcpy(name_voidite.data, name, voidelle.name_voidelle_size);
+    populate_voidite_data(voidom, &name_voidite, name, voidelle.name_voidelle_size);
 
-    if (!write_void(voidom, &name_voidite, name_voidite.position, sizeof(Voidite)))
+    voidelle.name_voidelle = name_voidite.position;
+
+    if (!write_void(voidom, &voidelle, voidelle.position, sizeof(Voidelle)))
         return UNKNOWN_ERROR;
 
     memcpy(buf, &voidelle, sizeof(voidelle));
