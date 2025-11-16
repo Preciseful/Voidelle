@@ -76,19 +76,18 @@ uint64_t get_free_void(Voidom voidom)
 
 void invalidate_section(Voidom voidom, uint64_t pos)
 {
-    uint64_t section = pos / VOID_SIZE;
-    uint64_t i = section / 8;
-    uint64_t sector_offset = (i / VOID_SIZE) * VOID_SIZE;
-    int bit_pos = 7 - (section % 8);
+    uint64_t bit_index = pos;
+    uint64_t byte_index = bit_index / 8;
+    int bit_pos = 7 - (bit_index % 8);
 
-    uint8_t buf[VOID_SIZE];
-    disk_seek(voidom, voidom.voidlet.voidmap + sector_offset);
-    disk_read(voidom, buf, VOID_SIZE);
+    uint8_t buf;
+    disk_seek(voidom, voidom.voidlet.voidmap + byte_index);
+    disk_read(voidom, &buf, 1);
 
-    buf[i % VOID_SIZE] &= ~(1 << bit_pos);
+    buf &= ~(1 << bit_pos);
 
-    disk_seek(voidom, voidom.voidlet.voidmap + sector_offset);
-    disk_write(voidom, buf, VOID_SIZE);
+    disk_seek(voidom, voidom.voidlet.voidmap + byte_index);
+    disk_write(voidom, &buf, 1);
 }
 
 bool write_void(Voidom voidom, void *buf, uint64_t position, uint64_t size)
@@ -149,7 +148,9 @@ void clear_voidelle_content(Voidom voidom, Voidelle *voidelle)
             Voidelle child;
             read_void(voidom, &child, pos, sizeof(Voidelle));
 
-            remove_voidelle(voidom, voidelle, child, 0x3);
+            remove_voidelle(voidom, voidelle, child, true);
+            clear_voidelle_content(voidom, &child);
+            clear_voidelle_name(voidom, &child);
 
             pos = child.next_voidelle;
         }
@@ -281,6 +282,7 @@ uint64_t populate_voidite_data(Voidom voidom, Voidite *first_voidite_buf, const 
         uint64_t pos = get_free_void(voidom);
 
         Voidite voidite;
+        memset(&voidite, 0, sizeof(Voidite));
         voidite.position = pos;
         voidite.next_voidite = 0;
 
@@ -554,19 +556,16 @@ void swap_voidelles(Voidom voidom, Voidelle *first, Voidelle *second, int swaps)
     write_void(voidom, second, second->position, sizeof(Voidelle));
 }
 
-bool remove_voidelle(Voidom voidom, Voidelle *parent, Voidelle voidelle, int clears)
+bool remove_voidelle(Voidom voidom, Voidelle *parent, Voidelle voidelle, bool invalidate)
 {
     if (parent->content_voidelle == voidelle.position)
     {
-        if (clears & 0x1)
-            clear_voidelle_content(voidom, &voidelle);
-        if (clears & 0x2)
-            clear_voidelle_name(voidom, &voidelle);
-
         parent->content_voidelle = voidelle.next_voidelle;
 
         write_void(voidom, parent, parent->position, sizeof(Voidelle));
-        invalidate_section(voidom, voidelle.position);
+
+        if (invalidate)
+            invalidate_section(voidom, voidelle.position);
 
         return true;
     }
@@ -588,14 +587,11 @@ bool remove_voidelle(Voidom voidom, Voidelle *parent, Voidelle voidelle, int cle
         if (neighbour.next_voidelle != voidelle.position)
             return false;
 
-        if (clears & 0x1)
-            clear_voidelle_content(voidom, &voidelle);
-        if (clears & 0x2)
-            clear_voidelle_name(voidom, &voidelle);
-
         neighbour.next_voidelle = voidelle.next_voidelle;
         write_void(voidom, &neighbour, neighbour.position, sizeof(neighbour));
-        invalidate_section(voidom, voidelle.position);
+
+        if (invalidate)
+            invalidate_section(voidom, voidelle.position);
 
         return true;
     }
@@ -603,27 +599,13 @@ bool remove_voidelle(Voidom voidom, Voidelle *parent, Voidelle voidelle, int cle
     return false;
 }
 
-void add_voidelle(Voidom voidom, Voidelle *parent, Voidelle voidelle)
+void add_voidelle(Voidom voidom, Voidelle *parent, Voidelle *voidelle)
 {
-    if (!parent->content_voidelle)
-    {
-        parent->content_voidelle = voidelle.position;
-        write_void(voidom, parent, parent->position, sizeof(Voidelle));
-    }
-    else
-    {
-        Voidelle neighbour;
-        unsigned long pos = parent->content_voidelle;
+    voidelle->next_voidelle = parent->content_voidelle;
+    parent->content_voidelle = voidelle->position;
 
-        while (pos)
-        {
-            read_void(voidom, &neighbour, pos, sizeof(Voidelle));
-            pos = neighbour.next_voidelle;
-        }
-
-        neighbour.next_voidelle = voidelle.position;
-        write_void(voidom, &neighbour, neighbour.position, sizeof(Voidelle));
-    }
+    write_void(voidom, voidelle, voidelle->position, sizeof(Voidelle));
+    write_void(voidom, parent, parent->position, sizeof(Voidelle));
 }
 
 void add_voidelle_with_check(Voidom voidom, Voidelle *parent, Voidelle voidelle)

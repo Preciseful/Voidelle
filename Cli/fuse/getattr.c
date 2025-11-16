@@ -9,6 +9,7 @@ int GetAttributes(struct cli_context *cli_ctx, Voidelle voidelle, struct stat *s
     if (cli_ctx->gid)
         fprintf(stderr, "GID specified: %lu\n", cli_ctx->gid);
 
+    fprintf(stderr, "GET ATTRIBUTES: %lu > %lu\n", voidelle.position, voidelle.next_voidelle);
     st->st_uid = voidelle.owner_id;
     st->st_gid = cli_ctx->gid ? cli_ctx->gid : getgid();
     st->st_atime = voidelle.access_seconds;

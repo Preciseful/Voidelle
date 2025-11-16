@@ -24,7 +24,7 @@ int CreateEntry(const char *path, mode_t mode, bool dir)
     Voidelle parent;
     FindParentVoidelleByPath(voidom, path, &parent);
 
-    add_voidelle(voidom, &parent, voidelle);
+    add_voidelle(voidom, &parent, &voidelle);
 
     return 0;
 }

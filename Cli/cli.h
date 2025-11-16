@@ -44,3 +44,6 @@ int FuseReadFile(const char *path, char *buffer, size_t size, off_t offset, stru
 int FuseCreateFile(const char *path, mode_t mode, struct fuse_file_info *fi);
 int FuseCreateDirectory(const char *path, mode_t mode);
 int FuseUpdateTime(const char *path, const struct timespec *tv, struct fuse_file_info *fi);
+int FuseRename(const char *source_path, const char *destination_path, unsigned int flags);
+int FuseWriteToFile(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+int FuseRemoveEntry(const char *path);

@@ -96,7 +96,7 @@ verror_t get_voidelle_name(Voidom voidom, Voidelle voidelle, char *buf);
 bool get_content_voidite_at(Voidom voidom, Voidelle voidelle, Voidite *buf, unsigned long index);
 bool get_name_voidite_at(Voidom voidom, Voidelle voidelle, Voidite *buf, unsigned long index);
 unsigned long read_voidelle(Voidom voidom, Voidelle voidelle, unsigned long seek, void *buf, unsigned long size);
-void add_voidelle(Voidom voidom, Voidelle *parent, Voidelle voidelle);
+void add_voidelle(Voidom voidom, Voidelle *parent, Voidelle *voidelle);
 void add_voidelle_with_check(Voidom voidom, Voidelle *parent, Voidelle voidelle);
 
 // swaps = 0x0, do not swap anything but the voidelles
@@ -105,8 +105,4 @@ void add_voidelle_with_check(Voidom voidom, Voidelle *parent, Voidelle voidelle)
 // swaps = 0x3, swap both
 void swap_voidelles(Voidom voidom, Voidelle *first, Voidelle *second, int swaps);
 
-// clears = 0x0, dont clear content or name
-// clears = 0x1, clear content
-// clears = 0x2, clear name
-// clears = 0x3, clear both
-bool remove_voidelle(Voidom voidom, Voidelle *parent, Voidelle voidelle, int clears);
+bool remove_voidelle(Voidom voidom, Voidelle *parent, Voidelle voidelle, bool invalidate);
