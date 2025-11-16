@@ -98,6 +98,7 @@ This is the structure of any content required by `voidelle`. It is used primaril
 
 ## This tool
 It is meant to be used as a way to interact with a voidelle filesystem.
+The `Filesystem` folder contains a drop-in for baremetal kernels. (certain modifications may be necessary)
 
 ### Build
 1. Clone the repository.
