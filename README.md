@@ -2,9 +2,9 @@
 
 Voidelle is meant to be a simple to implement filesystem, without focusing on disk or speed efficiency.
 
-> [!NOTE]
+> [!IMPORTANT]
 > This uses FUSE. You can mount this on your host computer and mess around through GUI and most CLI interactions.
-> Some features might be missing, and bugs are to be expected. Any bug reports/fixes are appreciated.
+> Some features might be missing, and bugs are to be expected.
 
 ## Design
 Voidelle revolves around a linked list design to represent data.
