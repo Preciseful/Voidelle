@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <time.h>
 
 #include "voidelle.h"
@@ -350,6 +349,7 @@ verror_t create_voidlet(Voidom *voidom)
 verror_t create_voidelle(Voidom voidom, Voidelle *buf, const char *name, enum Voidelle_Flags flags, uint64_t owner_id, uint8_t owner_perm, uint8_t other_perm)
 {
     uint64_t voidelle_position = get_free_void(voidom);
+    // time is not necessary, 0 can be the default
     time_t t = time(0);
 
     Voidelle voidelle;
