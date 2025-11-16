@@ -2,6 +2,10 @@
 
 Voidelle is meant to be a simple to implement filesystem, without focusing on disk or speed efficiency.
 
+> [!NOTE]
+> This uses FUSE. You can mount this on your host computer and mess around through GUI and most CLI interactions.
+> Some features might be missing, and bugs are to be expected. Any bug reports/fixes are appreciated.
+
 ## Design
 Voidelle revolves around a linked list design to represent data.
 > [!NOTE]
@@ -99,6 +103,7 @@ This is the structure of any content required by `voidelle`. It is used primaril
 ## This tool
 It is meant to be used as a way to interact with a voidelle filesystem.
 The `Filesystem` folder contains a drop-in for baremetal kernels. (certain modifications may be necessary)
+
 
 ### Build
 1. Clone the repository.
